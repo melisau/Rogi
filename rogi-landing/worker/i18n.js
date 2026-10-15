@@ -1,4 +1,10 @@
 export const uiEnglish={
+"Sayfada bulunan ilk 20 bağlantı arasından aynı site adresindeki en fazla 10 bağlantı incelenir. Bu sonuç tüm sitenin tarandığı anlamına gelmez.":"Up to 10 links on the same site address are checked from the first 20 links found on the page. This does not represent a crawl of the entire site.",
+"İç bağlantıları kontrol et (en fazla 10)":"Check internal links (up to 10)",
+"İç bağlantı sonuçları":"Internal link results",
+"İlk 20 adaydan en fazla 10 aynı-origin bağlantı incelenir. Bu sonuç tüm sitenin tarandığı anlamına gelmez.":"Up to 10 same-origin links from the first 20 candidates are checked. This does not represent a crawl of the entire site.",
+"HTTP sonucu alınamadı":"No HTTP response",
+"Bu kapsamda kontrol edilecek iç bağlantı yok.":"No internal links to check within this scope.",
 "Bozuk iç bağlantılar":"Broken internal links",
 "En fazla 10 uygun iç bağlantı kontrol edildi. 404/410 sonuçları GET ile doğrulandı; erişilemeyen sonuçlar doğrulanamadı olarak ayrıldı.":"Up to 10 eligible internal links were checked. GET confirmed 404/410 responses; inaccessible results remain unverified.",
 "404/410 dönen iç bağlantıları güncelleyin veya kaldırın.":"Update or remove internal links returning 404/410.",

@@ -49,7 +49,7 @@ Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun öz
 
 ## P3 — Kalite ve tarama kapsamı
 - [ ] Kontrollü çok sayfalı tarama.
-- [ ] Bozuk iç bağlantı kontrolü: opt-in sunucu motoru ve testleri hazır; UI, kanıt listesi ve canlı uçtan uca doğrulama tamamlanacak. İlk 20 adaydan en fazla 10 aynı-origin bağlantı; iki eşzamanlı istek.
+- [x] İsteğe bağlı bozuk iç bağlantı kontrolü ve URL/HTTP/durum kanıt listesi. İlk 20 adaydan en fazla 10 aynı-origin bağlantı; iki eşzamanlı istek. IANA üzerinde yerel tarayıcı ve canlı API aynı sonucu verdi: 8 geçti, 2 doğrulanamadı; HTTP 200.
 - [ ] PageSpeed/Core Web Vitals ölçümü.
 - [ ] Kapsamlı erişilebilirlik ve gerçek ekran okuyucu doğrulaması. Skip link, odak, seçili durum ve temel klavye akışları geçti.
 - [x] Masaüstü ve 390px mobil rapor/proje ekranı QA; son mobil dil düğmesi sıkışması düzeltildi.
@@ -58,10 +58,12 @@ Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun öz
 - [ ] Yerel Git eşitleme: asıl Windows klasörüne yazma hâlâ başarısız. İzole çalışma kopyası test edilip GitHub'a kaydediliyor.
 
 ## Kanıt ve sınırlar
-- Son tam UI yayını: 68 test + build ve gerçek Postgres kontrolleri geçti. Yeni bağlantı motoruyla yerelde 71 test geçti; canlı doğrulaması bekliyor.
+- Son tam UI yayını: 68 test + build ve gerçek Postgres kontrolleri geçti. Bağlantı motoru ve UI ile 71 test geçti; canlı API ve yerel gerçek tarayıcı kontrolü tamamlandı.
 - QA gerçek hesap bilgileri .env önekli yerel dosyalarda; GitHub'a veya yayına gönderilmez.
 - UI oluştur/düzenle/kaydet/listele/aç ve TR/EN akışları QA fixturelarıyla; API kalıcılık/izolasyonu gerçek Neon ile ayrı doğrulandı.
 - Normal tarama ve kontrol listesi notları yereldir. Yalnız açık bulut eylemi sunucu raporu kaydeder.
 - Vercel disconnect iletmezse iptal edilen bulut isteği kaydı tamamlayabilir; arayüz listeyi kontrol etmeyi bildirir.
 - Güvenlik ve mobil kontrol listeleri otomatik güvenlik sertifikası değildir.
 - Clerk kullanıcı kararıyla çıkarıldı. Neon kurulumu ve production domain izni tamamlandı; eski koşul kabulü talepleri artık beklemiyor.
+
+- Bağlantı QA: İngilizce HTTP sonucu açıklaması düzeltildi; rapor geçmişinden geri açma ve dil metinleri doğrulandı, konsol hatası yok. Dış siteye yönlenen/erişilemeyen URL'ler bozuk olarak işaretlenmedi. HEAD'de 404/410, 405 veya 501 varsa GET doğrulaması yapılır.
