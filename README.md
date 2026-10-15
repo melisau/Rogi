@@ -4,7 +4,7 @@ Rogi helps website owners and developers audit live websites and development pro
 
 ## Run locally
 
-Requires Node.js 22 or later. Install the pinned dependencies before running.
+Requires Node.js 24. Install the pinned dependencies before running.
 
 ```sh
 cd rogi-landing
@@ -36,7 +36,7 @@ The original audit implementation is retained in `seo-kontrol/`.
 
 See [TASKS.md](TASKS.md) for verified progress and remaining work. See [SECURITY.md](rogi-landing/SECURITY.md) before deploying a public scanning endpoint. DNS rebinding protection and distributed rate limits remain open.
 
-Reports and checklist notes are stored only in this browser (last 10 reports). JSON and CSV export are available. The audit workspace is still Turkish; full application localization is pending.
+Reports and checklist notes are stored only in this browser (last 10 reports). JSON and CSV export are available. The audit workspace, checklists, repair guidance, report exports, and API errors support Turkish and English; original website content and user notes are preserved.
 
 ## Personal demo
 
