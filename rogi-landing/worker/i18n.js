@@ -294,12 +294,12 @@ export function localizeReport(report,language='tr'){
     case 'alt':{const missing=tr.detail.match(/;\s*(\d+)/)?.[1]||'0';en.detail=report.images+' images; '+missing+' lack an alt attribute. Verify manually whether empty alt text is appropriate.';break;}
     case 'internal':en.detail=(tr.detail.match(/^\d+/)?.[0]||(report.internalLinks||[]).length)+' internal links found (report list capped at 20).';break;
     case 'schema':en.detail=(tr.detail.match(/^\d+/)?.[0]||'0')+' JSON-LD blocks; schema suitability requires separate verification.';break;
-    case 'robots':case 'sitemap':en.detail=c.status==='unknown'?'The file could not be verified (network, DNS, timeout, size, or access limitation).':c.status==='pass'?'The file was accessible and its format was recognized.':'The file is missing or its format was not recognized.';break;
+    case 'robots':case 'sitemap':en.detail=(tr.detail.match(/^HTTP \d+/)?.[0]?tr.detail.match(/^HTTP \d+/)[0]+'; ':'')+(c.status==='unknown'?'The file could not be verified (network, DNS, timeout, size, or access limitation).':c.status==='pass'?'The file was accessible and its format was recognized.':'The file is missing or its format was not recognized.');break;
    }
    return {...c,...(lang==='en'?en:tr),translations:{tr,en}};
  });
  const manualTr=report.manualTranslations?.tr||report.manual||[];
- const manualEn=['Actual indexing and the effect of robots.txt rules','Google Search Console report','PageSpeed / Core Web Vitals','Real-device and usability flows','Runtime verification of security behavior'];
+ const manualEn=manualTr.map(item=>translateUiText(item,'en'));
  return {...report,locale:lang,checks,manual:lang==='en'?manualEn:manualTr,manualTranslations:{tr:manualTr,en:manualEn}};
 }
 
