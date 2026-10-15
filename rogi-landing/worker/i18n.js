@@ -1,4 +1,5 @@
 export const uiEnglish={
+"Bulut projeleri":"Cloud projects",
 "Tarama servisi geçici olarak kullanılamıyor.":"Audit service temporarily unavailable.",
 "Hesabım":"My account",
 "İçeriğe geç":"Skip to content",
