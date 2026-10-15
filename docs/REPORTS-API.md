@@ -12,3 +12,7 @@ Her projede son 20 rapor tutulur. Kaydetme ve eski rapor temizliği proje adviso
 Canlı doğrulama: A hesabında example.com taraması 13 kontrol ile kaydedildi (201), aynı rapor geri okundu (200), payload deep equality geçti. B hesabında tekil ve liste 404. scripts/verify-reports.mjs build sırasında izole QA projesinde retention ve owner filtresini gerçek DB ile sınar; QA projesi sonunda silinir.
 
 Rapor görüntüleme ve kaydetme arayüzü henüz tamamlanmadı.
+
+## Arayüz
+
+Proje kartında Raporlar bölümünü açıp kayıtlı raporu seçin; /app?project=...&report=... adresi bulguları yükler. Proje bağlamında Tarayıp projeye kaydet yeni sunucu taraması oluşturur. Normal Analizi başlat yerel akıştır. Önceki yerel raporlar ve kontrol listesi notları buluta yüklenmez. İstek iptalinde Vercel disconnect sinyali iletilmezse sunucu kaydı tamamlayabilir; arayüz listeyi kontrol etmeyi bildirir.
