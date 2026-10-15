@@ -4,16 +4,18 @@ Rogi helps website owners and developers audit live websites and development pro
 
 ## Run locally
 
-Requires Node.js 22 or later. No npm dependencies are needed.
+Requires Node.js 22 or later. Install the pinned dependencies before running.
 
 ```sh
 cd rogi-landing
+npm ci
 npm run preview
 ```
 
 Open http://127.0.0.1:4175. The landing page is at `/`; the audit workspace is at `/app`.
 
 ```sh
+npm test
 npm run build
 ```
 
@@ -29,3 +31,9 @@ Build output is generated in `dist/server/` as Cloudflare Worker modules.
 - The landing-page score is illustrative, not a real audit result.
 
 The original audit implementation is retained in `seo-kontrol/`.
+
+## Development backlog
+
+See [TASKS.md](TASKS.md) for verified progress and remaining work. See [SECURITY.md](rogi-landing/SECURITY.md) before deploying a public scanning endpoint. DNS rebinding protection and distributed rate limits remain open.
+
+Reports and checklist notes are stored only in this browser (last 10 reports). JSON and CSV export are available. The audit workspace is still Turkish; full application localization is pending.

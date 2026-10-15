@@ -1,4 +1,3 @@
-import { mkdir, copyFile } from 'node:fs/promises';
-await mkdir('dist/server', {recursive:true});
-for (const file of ['index.js','audit.js','page.js','landing.js']) await copyFile('worker/'+file,'dist/server/'+file);
-console.log('Rogi build complete.');
+import { build } from 'esbuild';
+await build({entryPoints:['worker/index.js'],outfile:'dist/server/index.js',bundle:true,format:'esm',platform:'browser',target:'es2022'});
+console.log('Rogi Worker bundle ready.');
