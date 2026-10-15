@@ -46,7 +46,7 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [ ] PageSpeed/Core Web Vitals ve bozuk bağlantılar.
 - [ ] Kapsamlı klavye ve erişilebilirlik doğrulaması.
 - [x] 1440px masaüstü ve 390px mobil rapor ekranı; yatay sayfa taşması yok.
-- [ ] Landing canonical, sosyal metaveri ve dil URL'leri.
+- [x] Landing canonical, sosyal metaveri ve dil URL'leri.
 - [x] Eski seo-kontrol giriş noktası ortak rogi-landing motoru ve arayüzüne bağlandı; iki build de doğrulandı.
 - [ ] Yerel Git geçmişini GitHub ile eşitleme (Windows dosya yazma engeli).
 
@@ -82,3 +82,5 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - Neon Free (free_v3, auth=false, fra1): Vercel Marketplace şart kabulü gerekiyor. https://vercel.com/melisaus-projects/~/integrations/accept-terms/neon?source=cli
 - Her iki kurulum da action_required/integration_terms_acceptance_required döndü. Kurulum tamamlanmış veya anahtar sağlanmış sayılmıyor; bu aşamada ücretli plan açılmadı.
 - Kullanıcıya uygulama içi soru gönderildi. Kabul yanıtından sonra servis durumu yeniden doğrulanacak; bu sırada bağımsız görevler sürecek.
+
+- 2026-10-15: /tr ve /en sunucu tarafında doğru dilde sunuluyor; canonical, hreflang, Open Graph, Twitter ve WebSite JSON-LD eklendi. 43 test geçti; tarayıcıda EN → TR geçişi doğrulandı.

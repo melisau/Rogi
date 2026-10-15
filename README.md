@@ -47,3 +47,6 @@ https://rogi-audit.vercel.app — Vercel Authentication is enabled. The owner mu
 Next.js exported metadata, generateMetadata, route files and JSX title/description/canonical/H1 signals are parsed locally with Babel. Dynamic code is not executed. Findings identify file/line evidence and require runtime verification. The parser is loaded only when a project is reviewed. Project reading is limited to 400 supported files, under 500 KB each, with a 10 MB total source budget.
 
 `seo-kontrol` is now a compatibility entrypoint using the canonical `rogi-landing` implementation. Run `npm ci` in `rogi-landing` first. The compatibility preview serves the audit workspace at `/`; both builds use the same engine. Worker environments without a secure transport refuse scanning rather than falling back to unchecked networking.
+
+### Dil adresleri ve SEO
+Landing sayfası `/tr` ve `/en` adreslerinde sunucu tarafında çevrilmiş HTML sunar. `/` Türkçe adrese yönlenir. Her dil için canonical, hreflang, sosyal metaveri ve WebSite yapılandırılmış verisi bulunur; sitemap iki dil adresini içerir.
