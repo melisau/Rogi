@@ -1,7 +1,7 @@
 import worker from '../worker/index.js';
 import { createScanHandler } from '../worker/audit.js';
 import { nodeScan } from '../server/transport.js';
-const handleScan=createScanHandler({runScan:nodeScan});
+const handleScan=createScanHandler({runScan:nodeScan,onMetric:metric=>console.info(JSON.stringify(metric))});
 export default {async fetch(request){
   const url=new URL(request.url);
   const route=url.searchParams.get('rogi_route');

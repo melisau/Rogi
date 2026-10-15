@@ -38,7 +38,8 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [ ] Veritabanı ve kullanıcıya ait projeler.
 - [ ] Kullanıcı bazlı erişim kontrolü.
 - [ ] Arka plan tarama, ilerleme, iptal ve yeniden deneme.
-- [ ] Hata ve servis kullanım ölçümleri.
+- [x] Tarama süresi, HTTP sonucu, hata/limit/iptal kategorisi ve anlık aktif tarama sayısı için yapılandırılmış sunucu logları.
+- [ ] Kalıcı ölçüm geçmişi, eşik alarmları ve kullanım paneli.
 - [ ] Ücretli plan, kota ve ödeme (ürün kararı gerekiyor).
 
 ## P3 — Kalite
@@ -96,3 +97,5 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - `vercel integration list --scope melisaus-projects --non-interactive` yeniden kontrol edildi: bağlı kaynak yok. Auth/bulut kayıtları hazır kabul edilmiyor.
 - Neon koşullarının kullanıcı tarafından kabul edilmesi bekleniyor. Ardından veritabanı bağlanacak, Better Auth oturum akışı, kullanıcıya ait projeler ve iki farklı kullanıcı arasında erişim izolasyonu test edilecek.
 - Kaynaklar: https://better-auth.com/docs/installation ve https://neon.com/docs/introduction/plans
+
+- 2026-10-15: rogi.audit metrikleri eklenip 46 test/build ile doğrulandı. Log sink hatası API sonucunu değiştirmez. Özel metrikler URL, IP, sorgu, rapor ve hata ayrıntısı içermez. İstemci iptali timeout yerine 499/cancelled olarak ayrılır.

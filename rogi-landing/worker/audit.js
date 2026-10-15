@@ -2,11 +2,16 @@ import { localizeReport, translateUiText } from './i18n.js';
 import { AuditError, readLimited, safeUrl, scan } from './engine.js';
 const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'};
 const json=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status,headers:{...headers,...extra}});
-export function createScanHandler({runScan=scan,now=()=>Date.now(),maxPerMinute=5,maxConcurrent=3}={}) {
+export function createScanHandler({runScan=scan,now=()=>Date.now(),maxPerMinute=5,maxConcurrent=3,onMetric=()=>{}}={}) {
   const clients=new Map(); let active=0;
   return async(request,env={})=>{
     let language=/^en(?:[-,;]|$)/i.test(request.headers.get('accept-language')||'')?'en':'tr';
-    const reply=(data,status=200,extra={})=>json(data.error?{...data,error:translateUiText(data.error,language)}:data,status,extra);
+    const started=now();
+    const reply=(data,status=200,extra={})=>{
+      const outcome=status===200?'success':status===429?'limited':status===499?'cancelled':status===504?'timeout':status>=500?'failure':'rejected';
+      try{onMetric({event:'rogi.audit',status,outcome,durationMs:Math.max(0,now()-started),activeScans:active});}catch{}
+      return json(data.error?{...data,error:translateUiText(data.error,language)}:data,status,extra);
+    };
     if(request.method!=='POST')return reply({error:'Yalnızca POST kullanılabilir.'},405,{allow:'POST'});
     const origin=request.headers.get('origin');
     if(origin&&origin!==new URL(request.url).origin)return reply({error:'Başka kaynaktan tarama isteği kabul edilmedi.'},403);
@@ -29,6 +34,7 @@ export function createScanHandler({runScan=scan,now=()=>Date.now(),maxPerMinute=
       const report=await runScan(url.href,{allowedHosts,signal:request.signal});
       return reply(Array.isArray(report.checks)?localizeReport(report,language):report);
     }catch(e){
+      if(request.signal.aborted)return reply({error:'Tarama iptal edildi. Yeniden başlatabilirsiniz.',code:'cancelled'},499);
       if(e instanceof AuditError)return reply({error:e.message,code:e.code},e.status);
       if(['TimeoutError','AbortError'].includes(e?.name))return reply({error:'Tarama zaman sınırına ulaştı.',code:'timeout'},504);
       return reply({error:'Tarama tamamlanamadı. Lütfen tekrar deneyin.',code:'scan_failed'},502);
