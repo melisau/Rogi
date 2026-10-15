@@ -6,7 +6,7 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 ## P0 — Yayın öncesi
 - [x] API yöntem/JSON/girdi/doğrudan origin kontrolleri; güvenli hata mesajları.
 - [x] Worker örneği içinde dakika başına 5 istek ve 3 eşzamanlı tarama sınırı.
-- [ ] Dağıtık ve kalıcı kullanım sınırları (mevcut sınırlar Worker örneğine özeldir).
+- [x] Neon Postgres üzerinde atomik kalıcı tarama kotaları: istemci 5/dakika, uygulama 60/dakika, tüm sunucularda 3 eşzamanlı izin; 60 saniyede süre dolumu. Yerel örnek sınırı ek koruma olarak korunur.
 - [x] URL, port, kimlik bilgisi, özel/rezerve DNS adresi ve yönlendirme denetimleri.
 - [x] Vercel/Node için socket DNS lookup sırasında doğrulanmış IP seçimi; özel/rezerve IP'ye rebinding engellenir.
 - [x] Güvenli aktarım bulunmayan Worker API yolu kapalı (503). Desteklenen yayın/önizleme yolu Vercel/Node socket doğrulamasını kullanır; kontrolsüz ağ aktarımına düşülmez.
@@ -111,3 +111,6 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - 2026-10-15: /account TR/EN giriş/kayıt/oturum/çıkış ekranı eklendi; uygulamadan mobilde de erişilebilir. Kayıt/giriş form geçişi, alan etiketleri ve İngilizce metinler tarayıcıda doğrulandı. Yerelde Neon sırrı yokken hizmete erişilemedi mesajı beklenir. HTML içindeki app/account/TR/EN scriptleri doğrudan derlenerek test edilir. Önceki preview çerez değişikliğindeki değişken çakışması düzeltildi. Gerçek hesapla kayıt/giriş/çıkış henüz doğrulanmadı.
 
 - 2026-10-15: Gerçek QA kayıt isteği canlı Neon Auth'tan 403/INVALID_ORIGIN aldı; kullanıcı hesabı oluşmuş sayılmıyor. get-session 200 olması tek başına kayıt/giriş başarısını kanıtlamıyor. Kullanıcıya Neon Auth → Configuration → Domains altında https://rogi-audit.vercel.app eklemesi için adım adım bildirim gönderildi. Bu ayar tamamlanmadan başarılı oturum veya bulut veri izolasyonu iddiası yapılmayacak. Hesap ekranı origin yapılandırma hatasını yanlış şifre gibi göstermiyor; boş oturumda hesap oluşturuldu mesajı yalnız kayıt akışında gösterilir.
+
+- 2026-10-15: Kullanıcı izinli domain ekledi. Gerçek QA hesabı kayıt 200, aynı kullanıcıyla oturum 200, çıkış 200 ve boş oturum, yeniden giriş 200 doğrulandı. E-posta doğrulama/sıfırlama ve kullanıcı veri izolasyonu henüz tamamlanmadı.
+- Dağıtık kota için rogi_private şeması build sırasında transaction ve migration kilidiyle oluşturulur. Kota başarısızsa yayın taraması 503 ile kapalı kalır; korumasız aktarıma düşülmez. İstemci anahtarı HMAC; ham IP saklanmaz. Gerçek Postgres eşzamanlılık/izin bırakma doğrulaması geçti; canlı tarama 200. 59 test ve yerel build başarılı.

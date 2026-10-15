@@ -1,3 +1,4 @@
+import {acquireScanLease} from '../server/quota.js';
 import {createAuthHandler} from '../server/auth.js';
 const handleAuth=createAuthHandler();
 import {createHealthHandler} from '../server/health.js';
@@ -5,7 +6,7 @@ const handleHealth=createHealthHandler();
 import worker from '../worker/index.js';
 import { createScanHandler } from '../worker/audit.js';
 import { nodeScan } from '../server/transport.js';
-const handleScan=createScanHandler({runScan:nodeScan,onMetric:metric=>console.info(JSON.stringify(metric))});
+const handleScan=createScanHandler({runScan:nodeScan,acquireLease:acquireScanLease,onMetric:metric=>console.info(JSON.stringify(metric))});
 export default {async fetch(request){
   const url=new URL(request.url);
   const route=url.searchParams.get('rogi_route');

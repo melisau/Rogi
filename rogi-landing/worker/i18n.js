@@ -1,4 +1,5 @@
 export const uiEnglish={
+"Tarama servisi geçici olarak kullanılamıyor.":"Audit service temporarily unavailable.",
 "Hesabım":"My account",
 "İçeriğe geç":"Skip to content",
 "Taramayı iptal et":"Cancel audit",

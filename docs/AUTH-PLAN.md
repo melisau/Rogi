@@ -32,3 +32,7 @@ Yönetilen Neon Auth seçildi; ayrı self-hosted Better Auth şeması oluşturul
 ## Canlı kayıt kontrolü
 
 QA kayıt isteği HTTP 403 ve INVALID_ORIGIN verdi. Kullanıcı Neon Console → Auth/Better Auth → Configuration → Domains altında tam https://rogi-audit.vercel.app origin'ini eklemeli (sonunda slash yok). Doküman: https://neon.com/docs/auth/guides/configure-domains. Ayar sonrası aynı kayıt/giriş/oturum/çıkış akışı tekrar test edilecek. Oturum GET 200/null sonucu başarılı kayıt kanıtı değildir.
+
+## Alan adı sonrası doğrulama
+
+Kullanıcı origin ekledi. QA kaydı 200, oturumda aynı user id, çıkış sonrası null ve aynı hesapla yeniden giriş 200 doğrulandı. Kimlik bilgileri test dosyalarında yerel .env önekiyle tutulur ve yayına/GitHub'a dahil edilmez. E-posta doğrulama/sıfırlama ile bulut kullanıcı izolasyonu ayrı açık işlerdir.

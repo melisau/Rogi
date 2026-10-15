@@ -1,3 +1,7 @@
+import {verifyQuota} from './verify-quota.mjs';
+import {migrate} from './migrate.mjs';
+await migrate();
+await verifyQuota();
 import { buildProjectClient } from './build-project.mjs';
 import { build } from 'esbuild';
 await buildProjectClient();
