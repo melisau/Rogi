@@ -1,7 +1,9 @@
+import {verifyReports} from './verify-reports.mjs';
 import {verifyQuota} from './verify-quota.mjs';
 import {migrate} from './migrate.mjs';
 await migrate();
 await verifyQuota();
+await verifyReports();
 import { buildProjectClient } from './build-project.mjs';
 import { build } from 'esbuild';
 await buildProjectClient();
