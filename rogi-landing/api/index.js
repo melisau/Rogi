@@ -1,3 +1,5 @@
+import {createAuthHandler} from '../server/auth.js';
+const handleAuth=createAuthHandler();
 import {createHealthHandler} from '../server/health.js';
 const handleHealth=createHealthHandler();
 import worker from '../worker/index.js';
@@ -10,6 +12,7 @@ export default {async fetch(request){
   if(url.pathname==='/api/index'&&route!==null)url.pathname='/'+route;
   url.searchParams.delete('rogi_route');
   if(url.pathname==='/api/health')return handleHealth(request);
+  if(url.pathname.startsWith('/api/auth/'))return handleAuth(new Request(url,request),url.pathname.slice('/api/auth/'.length));
   const headers=new Headers(request.headers);
   headers.delete('cf-connecting-ip');
   // Vercel overwrites this header at its edge. In local adapters, no forwarded IP is trusted.

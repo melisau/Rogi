@@ -24,3 +24,7 @@ Vercel CLI kaynak listesi: bağlı kaynak yok. Neon şart kabulü bekleniyor. Be
 ## Doğrulanan yeni durum
 
 Kullanıcı rogi-data Neon kaynağını bağladı. CLI Available/proje bağlantısını, canlı /api/health gerçek SELECT 1 ile HTTP 200 database:connected sonucunu doğruladı. Production sırları yerel indirmeye kapalı; bu koruma değiştirilmeyecek. Mevcut kaynak NEON_AUTH_BASE_URL içeriyor; yeni self-hosted auth şeması oluşturmadan önce bu yönetilen Better Auth hizmeti incelenecek. Hesap oturumu ve kullanıcı veri izolasyonu henüz uygulanmadı.
+
+## Sunucu köprüsü
+
+Yönetilen Neon Auth seçildi; ayrı self-hosted Better Auth şeması oluşturulmadı. Resmi framework-agnostic SDK kullanılıyor ve sürüm 0.6.0-beta sabit. Yalnız giriş/kayıt/çıkış/oturum yolları açık. Çerezler SDK tarafından işlenir; önizleme adaptörü çoklu Set-Cookie başlıklarını ayrı korur. Production/Preview cookie sırları ayrıdır. Canlı get-session 200/null başarılı. UI, gerçek kayıt, e-posta doğrulama ve kullanıcılar arası veri izolasyonu testleri hâlâ yapılacak.

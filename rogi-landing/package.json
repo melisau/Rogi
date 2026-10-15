@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@babel/parser": "8.0.7",
+    "@neondatabase/auth": "0.6.0-beta",
     "@neondatabase/serverless": "1.2.0",
     "parse5": "8.0.1",
     "undici": "8.12.1"
