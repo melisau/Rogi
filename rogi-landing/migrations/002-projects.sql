@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS rogi_private.projects(id uuid PRIMARY KEY,owner_id text NOT NULL,name text NOT NULL CHECK(char_length(name) BETWEEN 1 AND 100),url text NOT NULL DEFAULT '' CHECK(char_length(url)<=2048),created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS projects_owner_created ON rogi_private.projects(owner_id,created_at DESC);

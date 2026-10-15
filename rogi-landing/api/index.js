@@ -1,6 +1,8 @@
+import {createProjectsHandler} from '../server/projects.js';
 import {acquireScanLease} from '../server/quota.js';
 import {createAuthHandler} from '../server/auth.js';
 const handleAuth=createAuthHandler();
+const handleProjects=createProjectsHandler({auth:handleAuth});
 import {createHealthHandler} from '../server/health.js';
 const handleHealth=createHealthHandler();
 import worker from '../worker/index.js';
@@ -13,6 +15,7 @@ export default {async fetch(request){
   if(url.pathname==='/api/index'&&route!==null)url.pathname='/'+route;
   url.searchParams.delete('rogi_route');
   if(url.pathname==='/api/health')return handleHealth(request);
+  if(url.pathname==='/api/projects'||url.pathname.startsWith('/api/projects/'))return handleProjects(new Request(url,request));
   if(url.pathname.startsWith('/api/auth/'))return handleAuth(new Request(url,request),url.pathname.slice('/api/auth/'.length));
   const headers=new Headers(request.headers);
   headers.delete('cf-connecting-ip');

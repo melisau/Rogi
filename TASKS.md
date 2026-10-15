@@ -114,3 +114,5 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 
 - 2026-10-15: Kullanıcı izinli domain ekledi. Gerçek QA hesabı kayıt 200, aynı kullanıcıyla oturum 200, çıkış 200 ve boş oturum, yeniden giriş 200 doğrulandı. E-posta doğrulama/sıfırlama ve kullanıcı veri izolasyonu henüz tamamlanmadı.
 - Dağıtık kota için rogi_private şeması build sırasında transaction ve migration kilidiyle oluşturulur. Kota başarısızsa yayın taraması 503 ile kapalı kalır; korumasız aktarıma düşülmez. İstemci anahtarı HMAC; ham IP saklanmaz. Gerçek Postgres eşzamanlılık/izin bırakma doğrulaması geçti; canlı tarama 200. 59 test ve yerel build başarılı.
+
+- 2026-10-15: Kullanıcıya ait bulut proje API'si: GET/POST /api/projects, GET/PATCH /api/projects/:id. Sahip yalnız doğrulanmış Neon oturumundan; her SQL sorgusunda owner_id filtresi. 20 proje sınırı kullanıcı kilidiyle atomik. İki gerçek QA hesabında A proje oluşturma 201, A okuma 200; B okuma/PATCH 404, B listesi boş, oturumsuz istek 401 ve A verisi değişmemiş doğrulandı. 63 test ve build geçti. Proje yönetim ekranı, rapor kayıtları, silme/geri alma ve hesap silmede veri temizliği hâlâ açık.
