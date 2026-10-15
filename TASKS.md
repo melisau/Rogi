@@ -13,7 +13,7 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [x] İndirme sırasında byte sınırı, istek boyutu ve tarama zaman sınırı.
 - [x] parse5 ile HTML ayrıştırma; dekoratif alt, JSON-LD, X-Robots-Tag doğruluğu.
 - [x] Geçti / hata / doğrulanamadı / uygulanamaz ayrımı; puan paydasının düzeltilmesi.
-- [x] 22 motor/API/Node transport testi; izole kopyada npm test ve bundle build geçti.
+- [x] 25 motor/API/Node transport/UI helper testi; izole kopyada npm test ve bundle build geçti.
 - [x] GitHub Actions test/build yapılandırması.
 - [x] GitHub Actions'ın uzak çalışmasının doğrulanması (push ve PR, ikisi de başarılı).
 - [x] Kişisel ve ticari olmayan Vercel Hobby yayını: https://rogi-audit.vercel.app (Vercel Authentication korumalı).
@@ -25,10 +25,10 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [ ] Kontrole özgü efor değerleri ve efora göre sıralama (şimdilik varsayılan düşük).
 - [x] Kontrol listelerinde durum, not/kanıt ve site bazlı tarayıcı kaydı.
 - [x] Son 10 raporun yerel geçmişi ve önceki taramaya göre değişen durum sayısı.
-- [ ] Ayrıntılı yeni/çözülen/değişmeyen bulgu karşılaştırması.
+- [x] Ayrıntılı yeni/çözülen/değişen/değişmeyen/kaldırılan bulgu karşılaştırması; bilinmeyen sonuçlar çözülmüş sayılmaz.
 - [ ] Uygulama ve API sonuçlarında TR/EN desteği.
 - [x] Proje incelemesinde okunmayan dosya sayısının bildirilmesi.
-- [ ] Atlanan dosyaların isim ve neden bazında listelenmesi.
+- [x] Atlanan dosyaların isim ve neden bazında listelenmesi; klasör, tür, boyut ve adet sınırı.
 - [ ] Framework metadata ve route desteği.
 - [x] JSON/CSV rapor dışa aktarma; CSV formül başlangıçlarının etkisizleştirilmesi.
 - [x] JSON ve CSV indirme tarayıcıda doğrulandı.
@@ -51,7 +51,7 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [ ] Yerel Git geçmişini GitHub ile eşitleme (Windows dosya yazma engeli).
 
 ## Doğrulama kaydı
-- Motor/API/transport: 22 test geçti, build başarılı; npm audit 0 bilinen açık.
+- Motor/API/transport: 25 test geçti, build başarılı; npm audit 0 bilinen açık.
 - In-app browser: gerçek example.com taraması, rapor geçmişi, filtreler ve yenileme sonrası kontrol listesi durum/not kalıcılığı doğrulandı.
 - İlk tarayıcı kontrolde konsolda uygulama hatası/uyarısı yok.
 - Sahte tarama puanı kullanılmadı; test hedefinden gerçek API sonucu alındı.
@@ -69,3 +69,5 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - Mevcut Vercel hesabının Hobby planı CLI API ile doğrulandı; ücretli hizmet açılmadı.
 - Proje: rogi-audit, team: melisaus-projects. İlk yayın Vercel tarafından production olarak atandı; Authentication koruması açık.
 - MCP proje oluşturma 403 döndü; aynı hesap/ekipte CLI fallback başarılı oldu.
+
+- 15 Ekim devam doğrulaması: gerçek yeniden taramada 13 değişmeyen kontrol gösterildi. Dört dosyalı proje fixtureında bir dosya okundu; üç atlama nedeni (boyut, tür, klasör) tarayıcıda doğrulandı. Konsolda uygulama hatası yok.
