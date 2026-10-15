@@ -76,3 +76,9 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 
 - Framework QA: Next TSX fixtureında title, description, canonical, rota ve H1 için dosya/satır kanıtı tarayıcıda görüldü; tümü runtime doğrulaması isteyen Review durumunda. Parser yalnızca proje seçilince yüklenir. Toplam kaynak bütçesi 10 MB.
 - Tahmini efor sırası gerçek yeniden tarama sonucu ile tarayıcıda doğrulandı; konsolda hata yok.
+
+## Kullanıcı işlemi bekleyen kurulumlar
+- Clerk Hobby (hobby_2025_08, $0/ay): Vercel Marketplace şart kabulü gerekiyor. https://vercel.com/melisaus-projects/~/integrations/accept-terms/clerk?source=cli
+- Neon Free (free_v3, auth=false, fra1): Vercel Marketplace şart kabulü gerekiyor. https://vercel.com/melisaus-projects/~/integrations/accept-terms/neon?source=cli
+- Her iki kurulum da action_required/integration_terms_acceptance_required döndü. Kurulum tamamlanmış veya anahtar sağlanmış sayılmıyor; bu aşamada ücretli plan açılmadı.
+- Kullanıcıya uygulama içi soru gönderildi. Kabul yanıtından sonra servis durumu yeniden doğrulanacak; bu sırada bağımsız görevler sürecek.
