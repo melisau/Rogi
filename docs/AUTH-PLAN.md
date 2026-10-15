@@ -28,3 +28,7 @@ Kullanıcı rogi-data Neon kaynağını bağladı. CLI Available/proje bağlant�
 ## Sunucu köprüsü
 
 Yönetilen Neon Auth seçildi; ayrı self-hosted Better Auth şeması oluşturulmadı. Resmi framework-agnostic SDK kullanılıyor ve sürüm 0.6.0-beta sabit. Yalnız giriş/kayıt/çıkış/oturum yolları açık. Çerezler SDK tarafından işlenir; önizleme adaptörü çoklu Set-Cookie başlıklarını ayrı korur. Production/Preview cookie sırları ayrıdır. Canlı get-session 200/null başarılı. UI, gerçek kayıt, e-posta doğrulama ve kullanıcılar arası veri izolasyonu testleri hâlâ yapılacak.
+
+## Canlı kayıt kontrolü
+
+QA kayıt isteği HTTP 403 ve INVALID_ORIGIN verdi. Kullanıcı Neon Console → Auth/Better Auth → Configuration → Domains altında tam https://rogi-audit.vercel.app origin'ini eklemeli (sonunda slash yok). Doküman: https://neon.com/docs/auth/guides/configure-domains. Ayar sonrası aynı kayıt/giriş/oturum/çıkış akışı tekrar test edilecek. Oturum GET 200/null sonucu başarılı kayıt kanıtı değildir.
