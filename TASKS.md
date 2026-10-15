@@ -101,3 +101,5 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - 2026-10-15: rogi.audit metrikleri eklenip 46 test/build ile doğrulandı. Log sink hatası API sonucunu değiştirmez. Özel metrikler URL, IP, sorgu, rapor ve hata ayrıntısı içermez. İstemci iptali timeout yerine 499/cancelled olarak ayrılır.
 
 - 2026-10-15: Ortak Node önizleme adaptörü bağlantı kopmasını Request.signal iptaline çeviriyor. Gerçek socket kesilmesi, normal yanıt, sahte IP başlığı temizliği ve 4096 byte sınırı test edildi. 48 test ve build başarılı. Bu yerel doğrulama Vercel altyapısının disconnect aktarımını tek başına kanıtlamaz.
+
+- 2026-10-15: Uygulamaya ilk sırada içeriğe geç bağlantısı ve textarea/select odak göstergeleri eklendi. Beş denetim bölümü aria-controls/aria-pressed bildiriyor; bölüm seçilince h1 odaklanıyor. SEO liste ve sonuç filtreleri seçili durumu bildiriyor. Tarayıcıda Enter/Space ile tüm bölüm geçişleri, skip hedefi ve kayıtlı rapor filtresi doğrulandı; konsol hatası yok. Gerçek ekran okuyucu ve kapsamlı WCAG denetimi henüz yapılmadı. 48 test/build geçti.
