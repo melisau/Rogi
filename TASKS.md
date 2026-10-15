@@ -14,7 +14,7 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [x] Geçti / hata / doğrulanamadı / uygulanamaz ayrımı; puan paydasının düzeltilmesi.
 - [x] 18 motor/API testi; izole kopyada npm test ve bundle build geçti.
 - [x] GitHub Actions test/build yapılandırması.
-- [ ] GitHub Actions'ın uzak çalışmasının doğrulanması.
+- [x] GitHub Actions'ın uzak çalışmasının doğrulanması (push ve PR, ikisi de başarılı).
 - [ ] Staging ve canlı yayın doğrulaması.
 
 ## P1 — Ana ürün
