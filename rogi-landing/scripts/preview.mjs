@@ -1,5 +1,5 @@
 import http from 'node:http';
-import worker from '../worker/index.js';
+import worker from '../api/index.js';
 const port=Number(process.env.PORT||4175);
 http.createServer(async(req,res)=>{
  try {
