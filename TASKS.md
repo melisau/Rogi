@@ -84,3 +84,5 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - Kullanıcıya uygulama içi soru gönderildi. Kabul yanıtından sonra servis durumu yeniden doğrulanacak; bu sırada bağımsız görevler sürecek.
 
 - 2026-10-15: /tr ve /en sunucu tarafında doğru dilde sunuluyor; canonical, hreflang, Open Graph, Twitter ve WebSite JSON-LD eklendi. 43 test geçti; tarayıcıda EN → TR geçişi doğrulandı.
+
+- 2026-10-15: Landing mobil bilgi bağlantıları görünür; klavye için içeriğe geç ve odak göstergesi eklendi. 390×844: yatay taşma yok, bilgi penceresi Escape ile kapanıp odağı geri veriyor. Masaüstü: içeriğe geç hedefi ve sekme ok tuşları doğrulandı. Bu kontrol tüm uygulama erişilebilirlik denetiminin yerine geçmez.
