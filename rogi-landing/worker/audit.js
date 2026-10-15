@@ -35,5 +35,6 @@ export function createScanHandler({runScan=scan,now=()=>Date.now(),maxPerMinute=
     }finally{active--;}
   };
 }
-const handleScan=createScanHandler();
-export default {fetch:handleScan};
+// A deployment must supply a transport that validates the actual socket destination.
+// Vercel's Node adapter injects createScanHandler({runScan:nodeScan}).
+export default {fetch:()=>json({error:'Bu ortamda güvenli tarama aktarımı yapılandırılmadı.',code:'secure_transport_required'},503)};

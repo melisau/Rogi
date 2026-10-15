@@ -9,11 +9,11 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [ ] Dağıtık ve kalıcı kullanım sınırları (mevcut sınırlar Worker örneğine özeldir).
 - [x] URL, port, kimlik bilgisi, özel/rezerve DNS adresi ve yönlendirme denetimleri.
 - [x] Vercel/Node için socket DNS lookup sırasında doğrulanmış IP seçimi; özel/rezerve IP'ye rebinding engellenir.
-- [ ] Cloudflare Worker yolunda aynı bağlantı garantisi; DoH kontrolü tek başına yeterli değildir. Şimdilik üretim yolu Vercel/Node olarak seçildi.
+- [x] Güvenli aktarım bulunmayan Worker API yolu kapalı (503). Desteklenen yayın/önizleme yolu Vercel/Node socket doğrulamasını kullanır; kontrolsüz ağ aktarımına düşülmez.
 - [x] İndirme sırasında byte sınırı, istek boyutu ve tarama zaman sınırı.
 - [x] parse5 ile HTML ayrıştırma; dekoratif alt, JSON-LD, X-Robots-Tag doğruluğu.
 - [x] Geçti / hata / doğrulanamadı / uygulanamaz ayrımı; puan paydasının düzeltilmesi.
-- [x] 30 motor/API/Node transport/UI helper/i18n testi; izole kopyada npm test ve bundle build geçti.
+- [x] 39 motor/API/transport/framework/UI/i18n testi; izole kopyada npm test ve bundle build geçti.
 - [x] GitHub Actions test/build yapılandırması.
 - [x] GitHub Actions'ın uzak çalışmasının doğrulanması (push ve PR, ikisi de başarılı).
 - [x] Kişisel ve ticari olmayan Vercel Hobby yayını: https://rogi-audit.vercel.app (Vercel Authentication korumalı).
@@ -22,14 +22,14 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 ## P1 — Ana ürün
 - [x] Bulguların durum ve önceliğe göre sıralanması; önceliğin gösterilmesi.
 - [x] Başarısız bulguda kanıt, önerilen düzeltme ve yeniden doğrulama.
-- [ ] Kontrole özgü efor değerleri ve efora göre sıralama (şimdilik varsayılan düşük).
+- [x] Kontrole özgü tahmini efor değerleri ve efora göre sıralama; hatalar her zaman önce, efor tahmini olarak etiketli.
 - [x] Kontrol listelerinde durum, not/kanıt ve site bazlı tarayıcı kaydı.
 - [x] Son 10 raporun yerel geçmişi ve önceki taramaya göre değişen durum sayısı.
 - [x] Ayrıntılı yeni/çözülen/değişen/değişmeyen/kaldırılan bulgu karşılaştırması; bilinmeyen sonuçlar çözülmüş sayılmaz.
 - [x] Uygulama, raporlar, kontrol listeleri, dışa aktarma ve API hata/sonuçlarında TR/EN desteği.
 - [x] Proje incelemesinde okunmayan dosya sayısının bildirilmesi.
 - [x] Atlanan dosyaların isim ve neden bazında listelenmesi; klasör, tür, boyut ve adet sınırı.
-- [ ] Framework metadata ve route desteği.
+- [x] Next.js metadata/generateMetadata/route ve React JSX title/description/canonical/H1 için tarayıcıda AST incelemesi; dinamik kaynak çalıştırılmaz.
 - [x] JSON/CSV rapor dışa aktarma; CSV formül başlangıçlarının etkisizleştirilmesi.
 - [x] JSON ve CSV indirme tarayıcıda doğrulandı.
 
@@ -47,11 +47,11 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [ ] Kapsamlı klavye ve erişilebilirlik doğrulaması.
 - [x] 1440px masaüstü ve 390px mobil rapor ekranı; yatay sayfa taşması yok.
 - [ ] Landing canonical, sosyal metaveri ve dil URL'leri.
-- [ ] Eski seo-kontrol kopyasını ortak motorla birleştirme.
+- [x] Eski seo-kontrol giriş noktası ortak rogi-landing motoru ve arayüzüne bağlandı; iki build de doğrulandı.
 - [ ] Yerel Git geçmişini GitHub ile eşitleme (Windows dosya yazma engeli).
 
 ## Doğrulama kaydı
-- Motor/API/transport: 30 test geçti, build başarılı; npm audit 0 bilinen açık.
+- Motor/API/transport: 39 test geçti, build başarılı; npm audit 0 bilinen açık.
 - In-app browser: gerçek example.com taraması, rapor geçmişi, filtreler ve yenileme sonrası kontrol listesi durum/not kalıcılığı doğrulandı.
 - İlk tarayıcı kontrolde konsolda uygulama hatası/uyarısı yok.
 - Sahte tarama puanı kullanılmadı; test hedefinden gerçek API sonucu alındı.
@@ -73,3 +73,6 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - 15 Ekim devam doğrulaması: gerçek yeniden taramada 13 değişmeyen kontrol gösterildi. Dört dosyalı proje fixtureında bir dosya okundu; üç atlama nedeni (boyut, tür, klasör) tarayıcıda doğrulandı. Konsolda uygulama hatası yok.
 
 - TR/EN QA: kayıtlı raporlar, karşılaştırma, proje incelemesi, güvenlik listesi ve API sonuçları iki dilde doğrulandı. Dil değişiminde notlar ve orijinal site içeriği korundu. 390px mobil ve masaüstünde yatay taşma veya konsol hatası yok.
+
+- Framework QA: Next TSX fixtureında title, description, canonical, rota ve H1 için dosya/satır kanıtı tarayıcıda görüldü; tümü runtime doğrulaması isteyen Review durumunda. Parser yalnızca proje seçilince yüklenir. Toplam kaynak bütçesi 10 MB.
+- Tahmini efor sırası gerçek yeniden tarama sonucu ile tarayıcıda doğrulandı; konsolda hata yok.

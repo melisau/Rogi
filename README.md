@@ -41,3 +41,9 @@ Reports and checklist notes are stored only in this browser (last 10 reports). J
 ## Personal demo
 
 https://rogi-audit.vercel.app — Vercel Authentication is enabled. The owner must sign in with the Vercel account. This is a non-commercial Hobby deployment; no paid services were enabled. Vercel uses the Node transport with socket-level DNS validation; the Worker-only transport still needs equivalent egress hardening.
+
+## Local framework review
+
+Next.js exported metadata, generateMetadata, route files and JSX title/description/canonical/H1 signals are parsed locally with Babel. Dynamic code is not executed. Findings identify file/line evidence and require runtime verification. The parser is loaded only when a project is reviewed. Project reading is limited to 400 supported files, under 500 KB each, with a 10 MB total source budget.
+
+`seo-kontrol` is now a compatibility entrypoint using the canonical `rogi-landing` implementation. Run `npm ci` in `rogi-landing` first. The compatibility preview serves the audit workspace at `/`; both builds use the same engine. Worker environments without a secure transport refuse scanning rather than falling back to unchecked networking.

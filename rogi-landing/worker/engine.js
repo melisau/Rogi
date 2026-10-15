@@ -72,7 +72,7 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   const title=text(all('title')[0]), description=meta('description'), robots=meta('robots')+', '+meta('googlebot')+', '+(headers.get('x-robots-tag')||'');
   const canonicals=all('link').filter(n=>(attrs(n).rel||'').toLowerCase().split(/\s+/).includes('canonical'));
   const canonical=attrs(canonicals[0]).href||'', headings=nodes.filter(n=>/^h[1-6]$/.test(n.tagName)).map(n=>({level:Number(n.tagName[1]),text:text(n)})), images=all('img'), checks=[];
-  const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:'Düşük',fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
+  const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:({alt:'Orta',internal:'Orta',schema:'Orta',https:'Orta',http:'Orta'}[id]||'Düşük'),fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
   add('title','Sayfa başlığı',!!title,title||'Başlık bulunamadı.','İçerik','Yüksek','Sayfayı açıklayan bir title ekleyin.');
   add('description','Meta açıklama',!!description,description||'Meta açıklama bulunamadı.','İçerik','Orta','Sayfaya özgü meta description ekleyin.');
   add('h1','Ana H1 başlığı',headings.filter(x=>x.level===1).length===1,headings.filter(x=>x.level===1).length+' H1 bulundu.','İçerik','Orta','Sayfanın ana konusunu belirten H1 yapısını gözden geçirin.');
@@ -101,7 +101,7 @@ export async function scan(input, options={}) {
     const result=extras[index]; let status,detail;
     if(result.status==='rejected'){status='unknown';detail='Dosya doğrulanamadı; ağ, DNS, boyut veya zaman sınırı nedeniyle okunamadı.';}
     else {const r=result.value;status=r.status===200?(id==='robots'?/^\s*user-agent\s*:/im.test(r.body):/<(?:[a-z]+:)?(?:urlset|sitemapindex)\b/i.test(r.body))?'pass':'fail':r.status===404?'fail':'unknown';detail='HTTP '+r.status+'; '+(status==='pass'?'dosya biçimi tanındı.':'dosya yok, biçim tanınmadı veya erişim doğrulanamadı.');}
-    analysis.checks.push({id,label,status,detail,category:'Teknik',priority:'Orta',effort:'Düşük',fix:id==='robots'?'Tarayıcı kurallarını içeren robots.txt dosyasını doğrulayın.':'Geçerli sitemap dosyasını yayınlayın; farklı yol kullanılıyorsa ayrıca doğrulayın.',verify:'Dosya adresini açıp yeniden tarayın.',evidence:{url:origin+'/'+(id==='robots'?'robots.txt':'sitemap.xml'),detail}});
+    analysis.checks.push({id,label,status,detail,category:'Teknik',priority:'Orta',effort:id==='sitemap'?'Orta':'Düşük',fix:id==='robots'?'Tarayıcı kurallarını içeren robots.txt dosyasını doğrulayın.':'Geçerli sitemap dosyasını yayınlayın; farklı yol kullanılıyorsa ayrıca doğrulayın.',verify:'Dosya adresini açıp yeniden tarayın.',evidence:{url:origin+'/'+(id==='robots'?'robots.txt':'sitemap.xml'),detail}});
   }
   analysis.checks=sortChecks(analysis.checks);
   return {version:2,url:home.url,scannedAt:new Date().toISOString(),...analysis,...summarize(analysis.checks),manual:['Gerçek indeksleme ve robots.txt kurallarının etkisi','Google Search Console raporu','PageSpeed / Core Web Vitals','Gerçek cihaz ve kullanılabilirlik akışları','Güvenlik davranışının çalışma zamanında doğrulanması']};

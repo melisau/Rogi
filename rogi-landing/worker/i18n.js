@@ -248,7 +248,23 @@ export const uiEnglish={
   "Gerçek indeksleme ve robots.txt kurallarının etkisi": "Actual indexing and the effect of robots.txt rules",
   "Google Search Console raporu": "Google Search Console report",
   "Gerçek cihaz ve kullanılabilirlik akışları": "Real-device and usability flows",
-  "Güvenlik davranışının çalışma zamanında doğrulanması": "Runtime verification of security behavior"
+  "Güvenlik davranışının çalışma zamanında doğrulanması": "Runtime verification of security behavior",
+  "Framework sözdizimi": "Framework syntax",
+  "Dosya ayrıştırılamadı; kaynak bulguları doğrulanamadı.": "The file could not be parsed; source findings are unverified.",
+  "Framework rotası": "Framework route",
+  "Route dosyası bulundu; dinamik parametreler ve layout kalıtımı çalışan uygulamada doğrulanmalıdır.": "A route file was found; verify dynamic parameters and layout inheritance in the running application.",
+  "Dinamik metadata üretimi bulundu; kaynak kod çalıştırılmadı.": "Dynamic metadata generation was found; source code was not executed.",
+  "Metadata ifadesi statik olarak çözümlenemedi; kaynak kod çalıştırılmadı.": "The metadata expression could not be resolved statically; source code was not executed.",
+  "Statik kaynak işareti bulundu; çalışma zamanında doğrulayın.": "A static source signal was found; verify it at runtime.",
+  "Dinamik JSX içeriği bulundu; çalışma zamanında doğrulayın.": "Dynamic JSX content was found; verify it at runtime.",
+  "Kaynakta H1 işareti bulundu; koşullu render nedeniyle gerçek başlık sayısı canlı sayfada doğrulanmalıdır.": "H1 source signals were found; conditional rendering means the actual heading count must be verified on the live page.",
+  "Metadata bulunamadı; üst layout veya dinamik üretimden gelebilir.": "No metadata declaration was found; it may be inherited from a parent layout or generated dynamically.",
+  "10 MB toplam proje sınırı": "10 MB total project limit",
+  "Bulgu sıralaması": "Finding order",
+  "Önceliğe göre": "By priority",
+  "Efora göre": "By effort",
+  "Bu ortamda güvenli tarama aktarımı yapılandırılmadı.": "A secure scanning transport is not configured in this environment.",
+  "Belirtilmedi": "Not specified"
 };
 export function translateUiText(value,language='tr') {
   if(value===undefined||value===null||language!=='en')return value;
@@ -268,9 +284,10 @@ export function translateUiText(value,language='tr') {
     [/^(.*) · (.+) · (\d+) kaynak dosyası$/,m=>m[1]+' · '+translateUiText(m[2],'en')+' · '+m[3]+' source files'],
     [/^(.*) · Kaydedilmiş rapor · (.*)$/,m=>m[1]+' · Saved report · '+m[2]],
     [/^(Geçti|Düzeltilecek|Doğrulanamadı|Uygulanamaz) · (Yüksek|Orta|Düşük|High|Medium|Low)$/,m=>translateUiText(m[1],'en')+' · '+translateUiText(m[2],'en')],
-    [/^(.*) — (Hariç tutulan klasör|Desteklenmeyen dosya türü|500 KB dosya sınırı|400 dosya sınırı)$/,m=>m[1]+' — '+translateUiText(m[2],'en')],
+    [/^(.*) — (Hariç tutulan klasör|Desteklenmeyen dosya türü|500 KB dosya sınırı|400 dosya sınırı|10 MB toplam proje sınırı)$/,m=>m[1]+' — '+translateUiText(m[2],'en')],
     [/^(Başlık:|Açıklama:|Hedef:|Konum:) (.*)$/,m=>translateUiText(m[1],'en')+' '+m[2]],
     [/^Kaynakta kanıt bulunamadı\. (.*)$/,m=>'No source evidence found. '+translateUiText(m[1],'en')],
+    [/^Tahmini efor: (Yüksek|Orta|Düşük|High|Medium|Low|Belirtilmedi)$/,m=>'Estimated effort: '+translateUiText(m[1],'en')],
     [/^İnceleme tamamlanamadı: (.*)$/,m=>'Review failed: '+translateUiText(m[1],'en')]
   ];
   for(const [pattern,render] of rules){const match=key.match(pattern);if(match)return text.replace(key,render(match));}

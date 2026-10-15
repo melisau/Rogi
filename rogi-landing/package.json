@@ -4,12 +4,13 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "preview": "node --watch scripts/preview.mjs",
+    "preview": "node scripts/build-project.mjs && node --watch scripts/preview.mjs",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "parse5": "8.0.1",
-    "undici": "8.12.1"
+    "undici": "8.12.1",
+    "@babel/parser": "8.0.7"
   },
   "devDependencies": {
     "esbuild": "0.28.2"
