@@ -78,7 +78,7 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - Tahmini efor sırası gerçek yeniden tarama sonucu ile tarayıcıda doğrulandı; konsolda hata yok.
 
 ## Kullanıcı işlemi bekleyen kurulumlar
-- Clerk Hobby (hobby_2025_08, $0/ay): Vercel Marketplace şart kabulü gerekiyor. https://vercel.com/melisaus-projects/~/integrations/accept-terms/clerk?source=cli
+- Clerk kullanıcı kararıyla çıkarıldı; kurulmayacak. Yerine uygulama içinde Better Auth + Neon Postgres seçildi.
 - Neon Free (free_v3, auth=false, fra1): Vercel Marketplace şart kabulü gerekiyor. https://vercel.com/melisaus-projects/~/integrations/accept-terms/neon?source=cli
 - Her iki kurulum da action_required/integration_terms_acceptance_required döndü. Kurulum tamamlanmış veya anahtar sağlanmış sayılmıyor; bu aşamada ücretli plan açılmadı.
 - Kullanıcıya uygulama içi soru gönderildi. Kabul yanıtından sonra servis durumu yeniden doğrulanacak; bu sırada bağımsız görevler sürecek.
@@ -89,3 +89,10 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 
 - 2026-10-15: Tek sayfa taramasında iptal düğmesi, durum duyuruları ve yeniden başlatma hazır. Request abort sinyali motora aktarılır; 30 saniye sınırı dış sinyalle de korunur. 44 test ve tarayıcıda iptal/yeniden etkinleşme doğrulandı. Kalıcı arka plan iş kuyruğu henüz yok.
 - Kullanıcı Clerk kullanmayacağını belirtti. Clerk kurulumu iptal; ücretsiz alternatif değerlendirilecek. Önceki Clerk şart kabulü isteği geçersizdir.
+
+## Güncel kimlik doğrulama kararı
+- Better Auth: standart Request/Response ve vanilla JavaScript istemci desteği mevcut; Rogi'nin Node/Vercel mimarisine uyumlu.
+- Neon Free: veritabanı için kullanılacak. 15 Ekim 2026 resmi plan kaynağında $0/ay; sınırlar proje başına 1 GB ve 100 CU-saat. Marketplace planı kurulum öncesi ayrıca doğrulanacak; ücretli plana geçilmeyecek.
+- `vercel integration list --scope melisaus-projects --non-interactive` yeniden kontrol edildi: bağlı kaynak yok. Auth/bulut kayıtları hazır kabul edilmiyor.
+- Neon koşullarının kullanıcı tarafından kabul edilmesi bekleniyor. Ardından veritabanı bağlanacak, Better Auth oturum akışı, kullanıcıya ait projeler ve iki farklı kullanıcı arasında erişim izolasyonu test edilecek.
+- Kaynaklar: https://better-auth.com/docs/installation ve https://neon.com/docs/introduction/plans
