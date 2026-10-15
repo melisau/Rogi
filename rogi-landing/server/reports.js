@@ -22,7 +22,7 @@ export function createReportsHandler({auth,scan,projects=projectStore,store=repo
    if(request.method==='GET'){if(!id)return reply({reports:await store.list(owner,project)});const report=await store.get(owner,project,id);return report?reply({report}):reply({error:'not_found'},404);}
    if(!/^application\/json(?:;|$)/i.test(request.headers.get('content-type')||''))return reply({error:'json_required'},415);
    let body;try{body=JSON.parse(await readLimited(request,4096));}catch{return reply({error:'invalid_request'},400);}
-   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['url','locale'].includes(k)))return reply({error:'invalid_request'},400);
+   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['url','locale','checkLinks'].includes(k)))return reply({error:'invalid_request'},400);
    const scanResponse=await scan(new Request(url.origin+'/api/scan',{method:'POST',headers:request.headers,body:JSON.stringify(body),signal:request.signal}));
    const payload=await scanResponse.json();if(!scanResponse.ok)return reply(payload,scanResponse.status,scanResponse.headers.has('retry-after')?{'retry-after':scanResponse.headers.get('retry-after')}:{});
    if(Buffer.byteLength(JSON.stringify(payload))>262144)return reply({error:'report_too_large'},413);

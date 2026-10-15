@@ -1,3 +1,4 @@
+import {checkInternalLinks} from './links.js';
 import { parse } from 'parse5';
 
 export class AuditError extends Error {
@@ -40,12 +41,14 @@ export async function readLimited(response, maxBytes = 1200000) {
   try { while(true) { const {done,value}=await reader.read(); if(done) break; bytes+=value.byteLength; if(bytes>maxBytes) { await reader.cancel(); throw new AuditError('Yanıt boyutu sınırı aşıldı.',413,'response_too_large'); } text+=decoder.decode(value,{stream:true}); } return text+decoder.decode(); }
   finally { reader.releaseLock(); }
 }
-export async function fetchPage(input, {fetchImpl=fetch, resolveHost=host=>resolvePublicHost(host,fetchImpl), signal, allowedHosts} = {}) {
+export async function fetchPage(input, {fetchImpl=fetch, resolveHost=host=>resolvePublicHost(host,fetchImpl), signal, allowedHosts, method='GET'} = {}) {
   let current=safeUrl(input); const originalHost=current.hostname;
   for(let i=0;i<5;i++) {
+    signal?.throwIfAborted();
     if(allowedHosts && !allowedHosts.includes(current.hostname)) throw new AuditError('Bu alan adı tarama izin listesinde değil.',403,'host_not_allowed');
     await resolveHost(current.hostname);
-    const response=await fetchImpl(current.href,{redirect:'manual',headers:{'user-agent':'RogiAudit/1.0',accept:'text/html,text/plain,application/xml;q=0.8'},signal:signal||AbortSignal.timeout(10000)});
+    signal?.throwIfAborted();
+    const response=await fetchImpl(current.href,{method,redirect:'manual',headers:{'user-agent':'RogiAudit/1.0',accept:'text/html,text/plain,application/xml;q=0.8'},signal:signal||AbortSignal.timeout(10000)});
     if([301,302,303,307,308].includes(response.status)) {
       const location=response.headers.get('location'); await response.body?.cancel();
       if(!location) throw new AuditError('Yönlendirme hedefi bulunamadı.',502,'invalid_redirect');
@@ -54,7 +57,7 @@ export async function fetchPage(input, {fetchImpl=fetch, resolveHost=host=>resol
       if(current.protocol==='https:' && next.protocol!=='https:') throw new AuditError('Güvensiz yönlendirme taranmadı.',400,'insecure_redirect');
       current=next; continue;
     }
-    return {url:current.href,status:response.status,type:response.headers.get('content-type')||'',headers:response.headers,body:await readLimited(response)};
+    return {url:current.href,status:response.status,type:response.headers.get('content-type')||'',headers:response.headers,body:method==='HEAD'?'':await readLimited(response)};
   }
   throw new AuditError('Çok fazla yönlendirme var.',502,'redirect_limit');
 }
@@ -89,7 +92,7 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   add('schema','Yapısal veri JSON biçimi',!invalidSchema,schemas.length+' JSON-LD bloğu; şema uygunluğu ayrıca doğrulanmalıdır.','Teknik','Orta','JSON-LD sözdizimini düzeltin; ilgili şema türünü doğrulayın.',schemas.length?undefined:'na');
   add('https','HTTPS',new URL(url).protocol==='https:',new URL(url).protocol,'Güvenlik','Yüksek','Siteyi HTTPS üzerinden yayınlayın.');
   add('http','Sayfa yanıtı',status===200,'HTTP '+status,'Teknik','Yüksek','Sayfanın beklenen HTTP durum koduyla dönmesini sağlayın.');
-  return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),images:images.length};
+  return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length};
 }
 export async function scan(input, options={}) {
   const signal=options.signal?AbortSignal.any([options.signal,AbortSignal.timeout(30000)]):AbortSignal.timeout(30000), settings={...options,signal}, home=await fetchPage(input,settings);
@@ -102,6 +105,13 @@ export async function scan(input, options={}) {
     if(result.status==='rejected'){status='unknown';detail='Dosya doğrulanamadı; ağ, DNS, boyut veya zaman sınırı nedeniyle okunamadı.';}
     else {const r=result.value;status=r.status===200?(id==='robots'?/^\s*user-agent\s*:/im.test(r.body):/<(?:[a-z]+:)?(?:urlset|sitemapindex)\b/i.test(r.body))?'pass':'fail':r.status===404?'fail':'unknown';detail='HTTP '+r.status+'; '+(status==='pass'?'dosya biçimi tanındı.':'dosya yok, biçim tanınmadı veya erişim doğrulanamadı.');}
     analysis.checks.push({id,label,status,detail,category:'Teknik',priority:'Orta',effort:id==='sitemap'?'Orta':'Düşük',fix:id==='robots'?'Tarayıcı kurallarını içeren robots.txt dosyasını doğrulayın.':'Geçerli sitemap dosyasını yayınlayın; farklı yol kullanılıyorsa ayrıca doğrulayın.',verify:'Dosya adresini açıp yeniden tarayın.',evidence:{url:origin+'/'+(id==='robots'?'robots.txt':'sitemap.xml'),detail}});
+  }
+  if(options.checkLinks){
+   analysis.linkAudit=await checkInternalLinks(analysis.internalLinks,home.url,settings);
+   analysis.linkAudit.candidateLimit=20;analysis.linkAudit.pageInternalLinks=analysis.internalLinkCount;
+   const results=analysis.linkAudit.results,status=results.some(x=>x.status==='fail')?'fail':results.some(x=>x.status==='unknown')?'unknown':results.length?'pass':'na';
+   const detail='En fazla 10 uygun iç bağlantı kontrol edildi. 404/410 sonuçları GET ile doğrulandı; erişilemeyen sonuçlar doğrulanamadı olarak ayrıldı.';
+   analysis.checks.push({id:'broken-links',label:'Bozuk iç bağlantılar',status,detail,category:'Bağlantılar',priority:'Orta',effort:'Orta',fix:'404/410 dönen iç bağlantıları güncelleyin veya kaldırın.',verify:'Bağlantıları açıp yeniden tarayın.',evidence:{url:home.url,detail}});
   }
   analysis.checks=sortChecks(analysis.checks);
   return {version:2,url:home.url,scannedAt:new Date().toISOString(),...analysis,...summarize(analysis.checks),manual:['Gerçek indeksleme ve robots.txt kurallarının etkisi','Google Search Console raporu','PageSpeed / Core Web Vitals','Gerçek cihaz ve kullanılabilirlik akışları','Güvenlik davranışının çalışma zamanında doğrulanması']};

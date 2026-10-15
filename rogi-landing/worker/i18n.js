@@ -1,4 +1,8 @@
 export const uiEnglish={
+"Bozuk iç bağlantılar":"Broken internal links",
+"En fazla 10 uygun iç bağlantı kontrol edildi. 404/410 sonuçları GET ile doğrulandı; erişilemeyen sonuçlar doğrulanamadı olarak ayrıldı.":"Up to 10 eligible internal links were checked. GET confirmed 404/410 responses; inaccessible results remain unverified.",
+"404/410 dönen iç bağlantıları güncelleyin veya kaldırın.":"Update or remove internal links returning 404/410.",
+"Bağlantıları açıp yeniden tarayın.":"Open the links and run another audit.",
 "İstek iptal edildi. Bulut raporu kaydedilmiş olabilir; listeyi kontrol edin.":"Request cancelled. A cloud report may have been saved; check the list.",
 "Yerel geçmiş son 10 raporu bu tarayıcıda tutar. Bulut kaydı yalnız “Tarayıp projeye kaydet” ile yapılır. Kontrol listesi notları tarayıcıda ve site bazında saklanır.":"Local history keeps the last 10 reports in this browser. Only Audit and save to project saves to the cloud. Checklist notes stay in the browser, scoped to the site.",
 "Bulut raporu kaydedilemedi. Tekrar deneyin.":"Could not save the cloud report. Please try again.",
