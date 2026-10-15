@@ -37,3 +37,7 @@ The original audit implementation is retained in `seo-kontrol/`.
 See [TASKS.md](TASKS.md) for verified progress and remaining work. See [SECURITY.md](rogi-landing/SECURITY.md) before deploying a public scanning endpoint. DNS rebinding protection and distributed rate limits remain open.
 
 Reports and checklist notes are stored only in this browser (last 10 reports). JSON and CSV export are available. The audit workspace is still Turkish; full application localization is pending.
+
+## Personal demo
+
+https://rogi-audit.vercel.app — Vercel Authentication is enabled. The owner must sign in with the Vercel account. This is a non-commercial Hobby deployment; no paid services were enabled. Vercel uses the Node transport with socket-level DNS validation; the Worker-only transport still needs equivalent egress hardening.

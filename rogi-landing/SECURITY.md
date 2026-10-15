@@ -9,3 +9,9 @@ Bu sürüm prototip güvenlik iyileştirmelerini içerir; tam bir güvenlik dene
 - A/AAAA DNS cevapları herkese açık adreslerle sınırlandırılır. DNS kontrolü ile fetch arasında IP sabitleme bulunmadığından DNS rebinding riski henüz kapanmamıştır.
 - Açık internete üretim yayını öncesi güvenli egress/IP sabitleme ve dağıtık limit katmanı gereklidir. SCAN_ALLOWED_HOSTS virgülle ayrılmış operatör kontrollü sabit hostname listesidir; keyfi kullanıcı hedefleri için güvenlik garantisi vermez.
 - Sonuçlar ve kontrol listesi notları yerel depolamadadır. Ortak bilgisayarda hassas notlar tutulmamalıdır.
+
+## Vercel/Node yolu
+
+server/transport.js, DNS sonucunu socket lookup callback içinde doğrular ve aynı IPleri bağlantıya verir. TLS sertifika doğrulaması kapatılmamıştır. Bu yol yerel Node önizlemesinde ve Vercel Function içinde kullanılır. Socket aşamasında özel IPye rebinding ve karışık DNS yanıtları test edildi. Cloudflare Worker yolu henüz aynı garantiye sahip değildir.
+
+İlk yayın Vercel Authentication arkasındaki kişisel denemedir. Dağıtık kota, kullanıcı hesapları ve ticari üretim erişimi tamamlanmamıştır.

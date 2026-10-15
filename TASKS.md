@@ -8,14 +8,16 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [x] Worker örneği içinde dakika başına 5 istek ve 3 eşzamanlı tarama sınırı.
 - [ ] Dağıtık ve kalıcı kullanım sınırları (mevcut sınırlar Worker örneğine özeldir).
 - [x] URL, port, kimlik bilgisi, özel/rezerve DNS adresi ve yönlendirme denetimleri.
-- [ ] DNS rebinding'e karşı bağlantı IP'sini sabitleyen egress katmanı. DoH kontrolü tek başına bunu garanti etmez. Üretimde bu tamamlanmadan keyfi hedef taraması açılmamalı; SCAN_ALLOWED_HOSTS yalnızca operatörün kontrolündeki sabit hedeflere daraltılabilir.
+- [x] Vercel/Node için socket DNS lookup sırasında doğrulanmış IP seçimi; özel/rezerve IP'ye rebinding engellenir.
+- [ ] Cloudflare Worker yolunda aynı bağlantı garantisi; DoH kontrolü tek başına yeterli değildir. Şimdilik üretim yolu Vercel/Node olarak seçildi.
 - [x] İndirme sırasında byte sınırı, istek boyutu ve tarama zaman sınırı.
 - [x] parse5 ile HTML ayrıştırma; dekoratif alt, JSON-LD, X-Robots-Tag doğruluğu.
 - [x] Geçti / hata / doğrulanamadı / uygulanamaz ayrımı; puan paydasının düzeltilmesi.
-- [x] 18 motor/API testi; izole kopyada npm test ve bundle build geçti.
+- [x] 22 motor/API/Node transport testi; izole kopyada npm test ve bundle build geçti.
 - [x] GitHub Actions test/build yapılandırması.
 - [x] GitHub Actions'ın uzak çalışmasının doğrulanması (push ve PR, ikisi de başarılı).
-- [ ] Staging ve canlı yayın doğrulaması.
+- [x] Kişisel ve ticari olmayan Vercel Hobby yayını: https://rogi-audit.vercel.app (Vercel Authentication korumalı).
+- [x] Yayında /app ve gerçek example.com taraması HTTP 200 ile doğrulandı.
 
 ## P1 — Ana ürün
 - [x] Bulguların durum ve önceliğe göre sıralanması; önceliğin gösterilmesi.
@@ -49,7 +51,7 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - [ ] Yerel Git geçmişini GitHub ile eşitleme (Windows dosya yazma engeli).
 
 ## Doğrulama kaydı
-- Motor/API: 18 test geçti, build başarılı; npm audit 0 bilinen açık.
+- Motor/API/transport: 22 test geçti, build başarılı; npm audit 0 bilinen açık.
 - In-app browser: gerçek example.com taraması, rapor geçmişi, filtreler ve yenileme sonrası kontrol listesi durum/not kalıcılığı doğrulandı.
 - İlk tarayıcı kontrolde konsolda uygulama hatası/uyarısı yok.
 - Sahte tarama puanı kullanılmadı; test hedefinden gerçek API sonucu alındı.
@@ -61,3 +63,9 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - Hesap ve veritabanı kurulumu: sağlayıcı ve hesap erişimi gerekecek.
 - Faturalandırma: ücretsiz/ücretli ürün kararı, planlar ve ödeme hesabı gerekecek.
 - Kullanıcıdan bilgi gerekince bu sohbet içinde soru/bildirim gönderilecek; e-posta/mesaj gönderimi kurulmadı.
+
+## Hosting kararı
+- Kullanıcı ücretsiz, kişisel ve ticari olmayan deneme yayınını seçti.
+- Mevcut Vercel hesabının Hobby planı CLI API ile doğrulandı; ücretli hizmet açılmadı.
+- Proje: rogi-audit, team: melisaus-projects. İlk yayın Vercel tarafından production olarak atandı; Authentication koruması açık.
+- MCP proje oluşturma 403 döndü; aynı hesap/ekipte CLI fallback başarılı oldu.
