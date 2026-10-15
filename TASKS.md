@@ -86,3 +86,6 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - 2026-10-15: /tr ve /en sunucu tarafında doğru dilde sunuluyor; canonical, hreflang, Open Graph, Twitter ve WebSite JSON-LD eklendi. 43 test geçti; tarayıcıda EN → TR geçişi doğrulandı.
 
 - 2026-10-15: Landing mobil bilgi bağlantıları görünür; klavye için içeriğe geç ve odak göstergesi eklendi. 390×844: yatay taşma yok, bilgi penceresi Escape ile kapanıp odağı geri veriyor. Masaüstü: içeriğe geç hedefi ve sekme ok tuşları doğrulandı. Bu kontrol tüm uygulama erişilebilirlik denetiminin yerine geçmez.
+
+- 2026-10-15: Tek sayfa taramasında iptal düğmesi, durum duyuruları ve yeniden başlatma hazır. Request abort sinyali motora aktarılır; 30 saniye sınırı dış sinyalle de korunur. 44 test ve tarayıcıda iptal/yeniden etkinleşme doğrulandı. Kalıcı arka plan iş kuyruğu henüz yok.
+- Kullanıcı Clerk kullanmayacağını belirtti. Clerk kurulumu iptal; ücretsiz alternatif değerlendirilecek. Önceki Clerk şart kabulü isteği geçersizdir.

@@ -92,7 +92,7 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),images:images.length};
 }
 export async function scan(input, options={}) {
-  const signal=options.signal||AbortSignal.timeout(30000), settings={...options,signal}, home=await fetchPage(input,settings);
+  const signal=options.signal?AbortSignal.any([options.signal,AbortSignal.timeout(30000)]):AbortSignal.timeout(30000), settings={...options,signal}, home=await fetchPage(input,settings);
   if(!/text\/html|application\/xhtml\+xml/i.test(home.type)) throw new AuditError('Adres HTML sayfası döndürmedi.',422,'not_html');
   if(home.status===429||home.status>=500) throw new AuditError('Hedef site geçici olarak taranamadı.',502,'target_unavailable');
   const analysis=analyze(home.body,home.url,home.status,home.headers), origin=new URL(home.url).origin;

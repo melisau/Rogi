@@ -26,7 +26,7 @@ export function createScanHandler({runScan=scan,now=()=>Date.now(),maxPerMinute=
       if(['tr','en'].includes(body.locale))language=body.locale;
       const url=safeUrl(body.url);
       const allowedHosts=env.SCAN_ALLOWED_HOSTS?env.SCAN_ALLOWED_HOSTS.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean):undefined;
-      const report=await runScan(url.href,{allowedHosts});
+      const report=await runScan(url.href,{allowedHosts,signal:request.signal});
       return reply(Array.isArray(report.checks)?localizeReport(report,language):report);
     }catch(e){
       if(e instanceof AuditError)return reply({error:e.message,code:e.code},e.status);

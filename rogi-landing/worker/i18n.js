@@ -1,4 +1,8 @@
 export const uiEnglish={
+"Taramayı iptal et":"Cancel audit",
+"Tarama sürüyor…":"Audit in progress…",
+"Tarama tamamlandı.":"Audit complete.",
+"Tarama iptal edildi. Yeniden başlatabilirsiniz.":"Audit cancelled. You can start again.",
   "Site analizi": "Website audit",
   "Geliştirme projesi": "Development project",
   "SEO kontrol listesi": "SEO checklist",
