@@ -20,3 +20,7 @@ Vercel CLI kaynak listesi: bağlı kaynak yok. Neon şart kabulü bekleniyor. Be
 
 - https://better-auth.com/docs/installation — PostgreSQL, standart Request/Response ve vanilla istemci
 - https://neon.com/docs/introduction/plans — Free plan ve kullanım sınırları
+
+## Doğrulanan yeni durum
+
+Kullanıcı rogi-data Neon kaynağını bağladı. CLI Available/proje bağlantısını, canlı /api/health gerçek SELECT 1 ile HTTP 200 database:connected sonucunu doğruladı. Production sırları yerel indirmeye kapalı; bu koruma değiştirilmeyecek. Mevcut kaynak NEON_AUTH_BASE_URL içeriyor; yeni self-hosted auth şeması oluşturmadan önce bu yönetilen Better Auth hizmeti incelenecek. Hesap oturumu ve kullanıcı veri izolasyonu henüz uygulanmadı.
