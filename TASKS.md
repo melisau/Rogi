@@ -99,3 +99,5 @@ Geliştirme dalı: codex/rogi-backlog. Yerel çalışma klasörü Windows taraf�
 - Kaynaklar: https://better-auth.com/docs/installation ve https://neon.com/docs/introduction/plans
 
 - 2026-10-15: rogi.audit metrikleri eklenip 46 test/build ile doğrulandı. Log sink hatası API sonucunu değiştirmez. Özel metrikler URL, IP, sorgu, rapor ve hata ayrıntısı içermez. İstemci iptali timeout yerine 499/cancelled olarak ayrılır.
+
+- 2026-10-15: Ortak Node önizleme adaptörü bağlantı kopmasını Request.signal iptaline çeviriyor. Gerçek socket kesilmesi, normal yanıt, sahte IP başlığı temizliği ve 4096 byte sınırı test edildi. 48 test ve build başarılı. Bu yerel doğrulama Vercel altyapısının disconnect aktarımını tek başına kanıtlamaz.
