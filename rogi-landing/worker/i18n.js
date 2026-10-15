@@ -1,4 +1,5 @@
 export const uiEnglish={
+"Hesabım":"My account",
 "İçeriğe geç":"Skip to content",
 "Taramayı iptal et":"Cancel audit",
 "Tarama sürüyor…":"Audit in progress…",

@@ -12,7 +12,7 @@ export function createPreviewHandler(fetchHandler,{port,mapPath=path=>path}={}){
    if(res.destroyed)return;
    const body=Buffer.from(await response.arrayBuffer());
    if(res.destroyed)return;
-   const headers=Object.fromEntries(response.headers);const cookies=response.headers.getSetCookie();if(cookies.length)headers['set-cookie']=cookies;res.writeHead(response.status,headers);res.end(body);
+   const responseHeaders=Object.fromEntries(response.headers);const cookies=response.headers.getSetCookie();if(cookies.length)responseHeaders['set-cookie']=cookies;res.writeHead(response.status,responseHeaders);res.end(body);
   }catch{
    if(!res.destroyed&&!res.headersSent){res.writeHead(500,{'content-type':'text/plain'});res.end('Preview error');}
   }finally{req.off('aborted',disconnected);res.off('close',disconnected);}
