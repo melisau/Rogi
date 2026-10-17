@@ -6,3 +6,5 @@ dist/
 *.tar.gz
 .DS_Store
 Thumbs.db
+.vercel/
+rogi-landing/worker/project-bundle.js

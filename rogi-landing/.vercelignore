@@ -1,0 +1,6 @@
+.env*
+.vercel
+.openai
+node_modules
+dist
+tests

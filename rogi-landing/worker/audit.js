@@ -1,94 +1,48 @@
-import { page } from "./page.js";
-
-const json = (data, status = 200) => new Response(JSON.stringify(data), {
-  status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
-});
-
-function safeUrl(value) {
-  const url = new URL(value);
-  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || (url.port && !["80", "443"].includes(url.port))) throw new Error("Geçerli bir http veya https adresi girin.");
-  const host = url.hostname.toLowerCase();
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || /^[\d.]+$/.test(host) || host.includes(":")) throw new Error("Yalnızca herkese açık alan adları taranabilir.");
-  url.hash = "";
-  return url;
-}
-async function get(url) {
-  let current = safeUrl(url);
-  for (let i = 0; i < 4; i++) {
-    const response = await fetch(current, { redirect: "manual", headers: { "user-agent": "RogiSEOAudit/1.0", accept: "text/html,text/plain,application/xml;q=0.8" }, signal: AbortSignal.timeout(10000) });
-    if ([301,302,303,307,308].includes(response.status)) {
-      const next = safeUrl(new URL(response.headers.get("location") || "", current).href);
-      if (next.hostname !== current.hostname) throw new Error("Başka alan adına yönlendirme taranmadı.");
-      current = next; continue;
-    }
-    const type = response.headers.get("content-type") || "";
-    const body = (await response.text()).slice(0, 1200000);
-    return { status: response.status, body, type, url: current.href };
-  }
-  throw new Error("Çok fazla yönlendirme var.");
-}
-const matches = (html, re) => [...html.matchAll(re)];
-const attr = (tag, name) => {
-  const hit = tag.match(new RegExp("(?:^|\\s)" + name + "\\s*=\\s*([\"'])(.*?)\\1", "i"));
-  return hit?.[2]?.trim() || "";
-};
-function analyze(html, url, status) {
-  const checks = [];
-  const add = (id, label, ok, detail, category, priority = "Orta") => checks.push({ id, label, status: ok ? "pass" : "fail", detail, category, priority });
-  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g,"").trim() || "";
-  const metas = matches(html, /<meta\b[^>]*>/gi).map(x => x[0]);
-  const links = matches(html, /<link\b[^>]*>/gi).map(x => x[0]);
-  const headings = matches(html, /<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi).map(x => ({ level: Number(x[1]), text: x[2].replace(/<[^>]+>/g, "").trim() }));
-  const description = attr(metas.find(x => attr(x, "name").toLowerCase() === "description") || "", "content");
-  const canonical = attr(links.find(x => attr(x, "rel").toLowerCase().split(/\s+/).includes("canonical")) || "", "href");
-  const robots = attr(metas.find(x => attr(x, "name").toLowerCase() === "robots") || "", "content");
-  const images = matches(html, /<img\b[^>]*>/gi).map(x => x[0]);
-  const anchors = matches(html, /<a\b[^>]*>/gi).map(x => x[0]);
-  const internal = anchors.filter(x => { try { return new URL(attr(x, "href"), url).hostname === new URL(url).hostname; } catch { return false; } });
-  const schemas = matches(html, /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>/gi);
-  const cleanPath = new URL(url).pathname;
-  add("title","Özgün sayfa başlığı",!!title && title.length >= 20 && title.length <= 65, title || "Başlık bulunamadı.","İçerik","Yüksek");
-  add("description","Meta açıklama",description.length >= 70 && description.length <= 165, description || "Meta açıklama bulunamadı.","İçerik");
-  add("h1","Tek H1 başlığı",headings.filter(x => x.level === 1).length === 1, headings.filter(x => x.level === 1).length + " adet H1 bulundu.","İçerik","Yüksek");
-  add("hierarchy","Başlık hiyerarşisi",!headings.some((h,i) => i && h.level > headings[i-1].level + 1), "H1–H3 sırası incelendi.","İçerik");
-  add("url","Anlaşılır URL",cleanPath.length <= 100 && !/[çğıöşüÇĞİÖŞÜ]/.test(url) && new URL(url).search === "", cleanPath + new URL(url).search,"Teknik");
-  add("canonical","Canonical etiketi",!!canonical, canonical || "Canonical bulunamadı.","Teknik","Yüksek");
-  add("index","İndeksleme izni",!/(^|,)\s*noindex/i.test(robots), robots || "noindex bulunamadı.","Teknik","Yüksek");
-  add("alt","Görsel alt metinleri",images.every(x => x.includes("alt=") && !!attr(x, "alt")), images.length + " görselin " + images.filter(x => !attr(x, "alt")).length + " tanesinde açıklama eksik.","Medya");
-  add("internal","İç bağlantılar",internal.length > 0, internal.length + " iç bağlantı bulundu.","Bağlantılar");
-  add("schema","Yapısal veri",schemas.length > 0, schemas.length + " JSON-LD bloğu bulundu.","Teknik");
-  add("https","HTTPS",new URL(url).protocol === "https:",new URL(url).protocol.toUpperCase(),"Güvenlik","Yüksek");
-  add("http","Sayfa yanıtı",status === 200,"HTTP " + status,"Teknik","Yüksek");
-  return { checks, title, description, headings, internalLinks: [...new Set(internal.map(x => { try { return new URL(attr(x,"href"),url).href; } catch { return ""; } }))].filter(Boolean).slice(0,20), images: images.length };
-}
-async function scan(input) {
-  const target = safeUrl(input);
-  const home = await get(target.href);
-  if (!home.type.includes("html")) throw new Error("Adres HTML sayfası döndürmedi.");
-  const analysis = analyze(home.body, home.url, home.status);
-  const origin = new URL(home.url).origin;
-  const extra = await Promise.allSettled([get(origin + "/robots.txt"), get(origin + "/sitemap.xml")]);
-  const check = (id,label,ok,detail,category="Teknik") => analysis.checks.push({id,label,status:ok?"pass":"fail",detail,category,priority:"Orta"});
-  const robot = extra[0].status === "fulfilled" ? extra[0].value : null;
-  const sitemap = extra[1].status === "fulfilled" ? extra[1].value : null;
-  check("robots","robots.txt",robot?.status === 200 && /user-agent:/i.test(robot.body),robot?.status === 200 ? "Dosya erişilebilir." : "Dosya bulunamadı veya okunamadı.");
-  check("sitemap","XML sitemap",sitemap?.status === 200 && /<urlset|<sitemapindex/i.test(sitemap.body),sitemap?.status === 200 ? "Sitemap erişilebilir." : "Sitemap bulunamadı veya XML biçimi tanınmadı.");
-  const total = analysis.checks.length;
-  const passed = analysis.checks.filter(x => x.status === "pass").length;
-  return { url: home.url, scannedAt: new Date().toISOString(), score: Math.round(passed/total*100), passed, total, ...analysis,
-    manual: ["Google Search Console bağlantısı ve indeks raporu","Anahtar kelime ve içerik özgünlüğü","Gerçek kullanıcıda mobil görünüm","PageSpeed / Core Web Vitals ölçümü","Görsellerin sıkıştırılması ve gerçek boyutu","Bozuk bağlantılar ve 301 yönlendirmeleri","Faydalı 404 sayfası","Google arama sonucundaki başlık ve açıklama","Formlar, menü ve footer bağlantıları","Gizli sekme ve yavaş ağ testi","Başka biriyle kullanılabilirlik testi"]
+import { localizeReport, translateUiText } from './i18n.js';
+import { AuditError, readLimited, safeUrl, scan } from './engine.js';
+const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'};
+const json=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status,headers:{...headers,...extra}});
+export function createScanHandler({runScan=scan,now=()=>Date.now(),maxPerMinute=5,maxConcurrent=3,onMetric=()=>{},acquireLease}={}) {
+  const clients=new Map(); let active=0;
+  return async(request,env={})=>{
+    let language=/^en(?:[-,;]|$)/i.test(request.headers.get('accept-language')||'')?'en':'tr';
+    const started=now();
+    const reply=(data,status=200,extra={})=>{
+      const outcome=status===200?'success':status===429?'limited':status===499?'cancelled':status===504?'timeout':status>=500?'failure':'rejected';
+      try{onMetric({event:'rogi.audit',status,outcome,durationMs:Math.max(0,now()-started),activeScans:active});}catch{}
+      return json(data.error?{...data,error:translateUiText(data.error,language)}:data,status,extra);
+    };
+    if(request.method!=='POST')return reply({error:'Yalnızca POST kullanılabilir.'},405,{allow:'POST'});
+    const origin=request.headers.get('origin');
+    if(origin&&origin!==new URL(request.url).origin)return reply({error:'Başka kaynaktan tarama isteği kabul edilmedi.'},403);
+    if(!/^application\/json(?:;|$)/i.test(request.headers.get('content-type')||''))return reply({error:'JSON içerik türü gerekli.'},415);
+    const time=now();
+    for(const [key,value] of clients)if(time-value.start>=60000)clients.delete(key);
+    // Only trust Cloudflare's edge-set header. Local preview uses one shared client bucket.
+    const key=request.headers.get('cf-connecting-ip')||'local';
+    const bucket=clients.get(key)||{start:time,count:0};
+    if(bucket.count>=maxPerMinute)return reply({error:'Tarama sınırına ulaşıldı. Bir dakika sonra tekrar deneyin.'},429,{'retry-after':String(Math.max(1,Math.ceil((60000-(time-bucket.start))/1000)))});
+    if(active>=maxConcurrent||clients.size>=10000&&!clients.has(key))return reply({error:'Tarama kapasitesi dolu. Tekrar deneyin.'},429,{'retry-after':'10'});
+    bucket.count++;clients.set(key,bucket); active++;let lease;
+    try{
+      let body;
+      try{body=JSON.parse(await readLimited(request,4096));}catch(e){if(e instanceof AuditError)throw e;throw new AuditError('Geçerli bir JSON isteği gönderin.');}
+      if(!body||typeof body!=='object'||Array.isArray(body))throw new AuditError('Geçerli bir JSON nesnesi gönderin.');
+      if(['tr','en'].includes(body.locale))language=body.locale;
+      const url=safeUrl(body.url);
+      lease=await acquireLease?.({client:key});
+      if(lease&&!lease.allowed)return reply({error:lease.reason==='capacity'?'Tarama kapasitesi dolu. Tekrar deneyin.':'Tarama sınırına ulaşıldı. Bir dakika sonra tekrar deneyin.',code:'rate_limited'},429,{'retry-after':String(lease.retryAfter||10)});
+      const allowedHosts=env.SCAN_ALLOWED_HOSTS?env.SCAN_ALLOWED_HOSTS.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean):undefined;
+      const report=await runScan(url.href,{allowedHosts,signal:request.signal,checkLinks:body.checkLinks===true});
+      return reply(Array.isArray(report.checks)?localizeReport(report,language):report);
+    }catch(e){
+      if(request.signal.aborted)return reply({error:'Tarama iptal edildi. Yeniden başlatabilirsiniz.',code:'cancelled'},499);
+      if(e instanceof AuditError)return reply({error:e.message,code:e.code},e.status);
+      if(['TimeoutError','AbortError'].includes(e?.name))return reply({error:'Tarama zaman sınırına ulaştı.',code:'timeout'},504);
+      return reply({error:'Tarama tamamlanamadı. Lütfen tekrar deneyin.',code:'scan_failed'},502);
+    }finally{active--;try{await lease?.release?.();}catch{}}
   };
 }
-export default { async fetch(request) {
-  const path = new URL(request.url).pathname;
-  if (path === "/api/scan" && request.method === "POST") {
-    try {
-      const body = await request.json();
-      return json(await scan(body.url));
-    } catch (e) { return json({ error: e.message || "Tarama tamamlanamadı." }, 400); }
-  }
-  if (path === "/") return new Response(page, { headers: { "content-type": "text/html; charset=utf-8" } });
-  if (path === "/robots.txt") return new Response("User-agent: *\nAllow: /\nSitemap: " + new URL(request.url).origin + "/sitemap.xml", {headers:{"content-type":"text/plain"}});
-  if (path === "/sitemap.xml") return new Response('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'+new URL(request.url).origin+'/</loc></url></urlset>',{headers:{"content-type":"application/xml"}});
-  return new Response("Sayfa bulunamadı. Ana sayfaya dönün: /", {status:404,headers:{"content-type":"text/plain; charset=utf-8"}});
-}};
+// A deployment must supply a transport that validates the actual socket destination.
+// Vercel's Node adapter injects createScanHandler({runScan:nodeScan}).
+export default {fetch:()=>json({error:'Bu ortamda güvenli tarama aktarımı yapılandırılmadı.',code:'secure_transport_required'},503)};

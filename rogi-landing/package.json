@@ -1,1 +1,23 @@
-{"name":"rogi-landing","private":true,"type":"module","scripts":{"build":"node scripts/build.mjs","preview":"node scripts/preview.mjs"}}
+{
+  "name": "rogi-landing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/build-project.mjs && node --watch scripts/preview.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@babel/parser": "8.0.7",
+    "@neondatabase/auth": "0.6.0-beta",
+    "@neondatabase/serverless": "1.2.0",
+    "parse5": "8.0.1",
+    "undici": "8.12.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}
