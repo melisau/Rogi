@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {safeUrl,isPublicAddress,readLimited,fetchPage,analyze,scan,summarize,resolvePublicHost} from '../worker/engine.js';
+import {safeUrl,isPublicAddress,readLimited,fetchPage,analyze,scan,summarize,resolvePublicHost,crawlLinkedPages} from '../worker/engine.js';
 import {createScanHandler} from '../worker/audit.js';
 const html='<title>Rogi &amp; Audit</title><meta NAME=description CONTENT="Site description"><h1>Başlık</h1><img ALT = ""><a>no link</a><script type="application/ld+json">{"@type":"WebSite"}</script>';
 const req=(body={url:'https://example.com'},headers={})=>new Request('https://rogi.test/api/scan',{method:'POST',headers:{'content-type':'application/json',...headers},body:typeof body==='string'?body:JSON.stringify(body)});
@@ -18,6 +18,17 @@ test('redirects are revalidated and bodies cancelled',async()=>{let calls=0,reso
 test('cross-host and HTTPS downgrade redirects blocked',async()=>{for(const location of ['https://other.com','http://example.com'])await assert.rejects(fetchPage('https://example.com',{resolveHost:async()=>{},fetchImpl:async()=>new Response(null,{status:302,headers:{location}})}));});
 test('host allowlist enforced before network access',async()=>await assert.rejects(fetchPage('https://example.com',{allowedHosts:['other.com'],resolveHost:async()=>{throw Error('must not resolve');}}),/izin listesinde/));
 test('robots timeout is unknown, sitemap 404 fails',async()=>{const r=await scan('https://example.com',{resolveHost:async()=>{},fetchImpl:async url=>{if(url.endsWith('/robots.txt'))throw Error('timeout');if(url.endsWith('/sitemap.xml'))return new Response('missing',{status:404});return new Response(html,{headers:{'content-type':'text/html'}});}});assert.equal(r.checks.find(x=>x.id==='robots').status,'unknown');assert.equal(r.checks.find(x=>x.id==='sitemap').status,'fail');assert.equal(r.failed,r.checks.filter(x=>x.status==='fail').length);});
+test('optional linked-page crawl stays on origin, caps at three and reports page findings',async()=>{
+ const calls=[],home='<title>Home</title><h1>Home</h1>'+['/a','/b','/c','/d','/a','https://other.com/x','/logout','/search?q=x'].map(href=>'<a href="'+href+'">page</a>').join('');
+ const r=await scan('https://example.com/',{checkPages:true,resolveHost:async()=>{},fetchImpl:async url=>{calls.push(url);if(url.endsWith('/robots.txt'))return new Response('User-agent: *');if(url.endsWith('/sitemap.xml'))return new Response('<urlset></urlset>');return new Response(url==='https://example.com/'?home:'<title>Linked</title><h1>Linked</h1>',{headers:{'content-type':'text/html'}});}});
+ assert.equal(r.pageAudit.limit,3);assert.equal(r.pageAudit.discovered,4);assert.equal(r.pageAudit.omitted,1);assert.deepEqual(r.pageAudit.results.map(x=>x.url),['https://example.com/a','https://example.com/b','https://example.com/c']);
+ assert.ok(r.pageAudit.results[0].checks.some(x=>x.id==='description'));assert.equal(calls.filter(x=>x.endsWith('/d')).length,0);assert.equal(calls.filter(x=>x.includes('other.com')).length,0);
+ assert.equal(r.score,r.passed+r.failed?Math.round(r.passed/(r.passed+r.failed)*100):null);
+});
+test('linked-page redirects to another host remain unverified',async()=>{
+ const r=await crawlLinkedPages(['https://example.com/a'],'https://example.com/',{resolveHost:async()=>{},fetchImpl:async()=>new Response(null,{status:302,headers:{location:'https://other.com/'}})});
+ assert.equal(r.results[0].status,'unknown');assert.equal(r.results[0].httpStatus,null);
+});
 test('API validates method, content type, origin, JSON and URL',async()=>{const h=createScanHandler({maxPerMinute:100,runScan:async()=>({ok:true})});assert.equal((await h(new Request('https://rogi.test/api/scan'))).status,405);assert.equal((await h(req({}, {'content-type':'text/plain'}))).status,415);assert.equal((await h(req({}, {origin:'https://evil.test'}))).status,403);assert.equal((await h(req('{'))).status,400);assert.equal((await h(req({url:'http://localhost'}))).status,400);assert.equal((await h(req('x'.repeat(5000)))).status,413);});
 test('per-client minute window resets',async()=>{let now=0;const h=createScanHandler({now:()=>now,maxPerMinute:1,runScan:async()=>({ok:true})});assert.equal((await h(req())).status,200);const limited=await h(req());assert.equal(limited.status,429);assert.equal(limited.headers.get('retry-after'),'60');now=60000;assert.equal((await h(req())).status,200);});
 test('concurrency permit released after failure',async()=>{let release;const h=createScanHandler({maxConcurrent:1,runScan:()=>new Promise((_,reject)=>{release=reject;})});const first=h(req());while(!release)await new Promise(r=>setTimeout(r,1));assert.equal((await h(req())).status,429);release(Error('internal secret'));const failed=await first;assert.equal(failed.status,502);assert.doesNotMatch(await failed.text(),/internal secret/);});

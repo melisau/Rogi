@@ -94,6 +94,32 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   add('http','Sayfa yanıtı',status===200,'HTTP '+status,'Teknik','Yüksek','Sayfanın beklenen HTTP durum koduyla dönmesini sağlayın.');
   return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length};
 }
+export async function crawlLinkedPages(links, homeUrl, settings={}) {
+  const origin=new URL(homeUrl).origin, selected=[], seen=new Set([homeUrl]);
+  for(const value of links.slice(0,20)) {
+    try {
+      const url=safeUrl(value);
+      if(url.origin!==origin||url.search||seen.has(url.href)||/(^|\/)(logout|signout|delete|remove|unsubscribe)(\/|$)/i.test(url.pathname))continue;
+      seen.add(url.href);selected.push(url.href);
+    } catch {}
+  }
+  const targets=selected.slice(0,3),results=[];
+  async function inspect(url) {
+    settings.signal?.throwIfAborted();
+    try {
+      const page=await fetchPage(url,settings);
+      if(page.status!==200)return {url:page.url,status:page.status===404||page.status===410?'fail':'unknown',httpStatus:page.status,reason:'http_status'};
+      if(!/text\/html|application\/xhtml\+xml/i.test(page.type))return {url:page.url,status:'na',httpStatus:page.status,reason:'not_html'};
+      const result=analyze(page.body,page.url,page.status,page.headers),summary=summarize(result.checks);
+      return {url:page.url,status:'pass',httpStatus:page.status,title:result.title,description:result.description,score:summary.score,passed:summary.passed,failed:summary.failed,checks:result.checks.filter(x=>x.status==='fail').map(x=>({id:x.id,label:x.label,detail:x.detail,priority:x.priority,fix:x.fix}))};
+    } catch(error) {
+      if(settings.signal?.aborted)throw error;
+      return {url,status:'unknown',httpStatus:null,reason:'unavailable'};
+    }
+  }
+  for(let index=0;index<targets.length;index+=2)results.push(...await Promise.all(targets.slice(index,index+2).map(inspect)));
+  return {limit:3,discovered:selected.length,omitted:Math.max(0,selected.length-targets.length),results};
+}
 export async function scan(input, options={}) {
   const signal=options.signal?AbortSignal.any([options.signal,AbortSignal.timeout(30000)]):AbortSignal.timeout(30000), settings={...options,signal}, home=await fetchPage(input,settings);
   if(!/text\/html|application\/xhtml\+xml/i.test(home.type)) throw new AuditError('Adres HTML sayfası döndürmedi.',422,'not_html');
@@ -113,6 +139,7 @@ export async function scan(input, options={}) {
    const detail='En fazla 10 uygun iç bağlantı kontrol edildi. 404/410 sonuçları GET ile doğrulandı; erişilemeyen sonuçlar doğrulanamadı olarak ayrıldı.';
    analysis.checks.push({id:'broken-links',label:'Bozuk iç bağlantılar',status,detail,category:'Bağlantılar',priority:'Orta',effort:'Orta',fix:'404/410 dönen iç bağlantıları güncelleyin veya kaldırın.',verify:'Bağlantıları açıp yeniden tarayın.',evidence:{url:home.url,detail}});
   }
+  if(options.checkPages)analysis.pageAudit=await crawlLinkedPages(analysis.internalLinks,home.url,settings);
   analysis.checks=sortChecks(analysis.checks);
   return {version:2,url:home.url,scannedAt:new Date().toISOString(),...analysis,...summarize(analysis.checks),manual:['Gerçek indeksleme ve robots.txt kurallarının etkisi','Google Search Console raporu','PageSpeed / Core Web Vitals','Gerçek cihaz ve kullanılabilirlik akışları','Güvenlik davranışının çalışma zamanında doğrulanması']};
 }
