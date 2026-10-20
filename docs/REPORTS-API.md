@@ -4,6 +4,7 @@ POST /api/projects/:uuid/reports: JSON {url,locale} alır, sunucuda yeni tarama 
 
 GET /api/projects/:uuid/reports: son 20 raporun id,created_at,url,score özeti.
 GET /api/projects/:uuid/reports/:reportUuid: payload dahil rapor.
+DELETE /api/projects/:uuid/reports/:reportUuid: kendi raporunu siler; aynı Origin gerekir, başka kullanıcının raporu 404.
 
 Sahiplik bütün sorgularda hem proje hem rapor üzerinden doğrulanır. Başka kullanıcıya ait kimliklerde 404; oturumsuz istekte 401. Yanıtlar no-store. Tarama başarısızsa sonuç kayıt edilmez; özgün HTTP hata ve Retry-After korunur. API sırları veya oturum tokenları rapor payload'una eklenmez.
 
