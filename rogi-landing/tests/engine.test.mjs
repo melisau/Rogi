@@ -68,7 +68,7 @@ test('structured timeout status',async()=>{const h=createScanHandler({runScan:as
 test('unconfigured default transport fails closed',async()=>{const {default:audit}=await import('../worker/audit.js');assert.equal((await audit.fetch(req())).status,503);});
 
 test('security header checks judge HSTS, CSP, framing, nosniff, referrer and cookie flags',()=>{
- const status=(headers,url='https://example.com/')=>Object.fromEntries(analyze('<title>T</title>',url,200,headers).checks.filter(c=>c.category==='Güvenlik').map(c=>[c.id,c.status]));
+ const status=(headers,url='https://example.com/')=>Object.fromEntries(analyze('<title>T</title>',url,200,headers).checks.filter(c=>['https','hsts','csp','framing','nosniff','referrer','cookies'].includes(c.id)).map(c=>[c.id,c.status]));
  const good=new Headers({'strict-transport-security':'max-age=63072000; includeSubDomains','content-security-policy':"default-src 'self'; frame-ancestors 'none'",'x-content-type-options':'nosniff','referrer-policy':'no-referrer, strict-origin-when-cross-origin'});
  good.append('set-cookie','sid=1; Path=/; Secure; HttpOnly; SameSite=Lax');
  assert.deepEqual(status(good),{https:'pass',hsts:'pass',csp:'pass',framing:'pass',nosniff:'pass',referrer:'pass',cookies:'pass'});
