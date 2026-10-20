@@ -19,7 +19,15 @@ export function checkedLookup(lookup=dnsLookup) {
 }
 const dispatcher=new Agent({connections:3,connect:{lookup:checkedLookup(),timeout:10000},headersTimeout:10000,bodyTimeout:10000});
 export const secureFetch=(url,init)=>nodeFetch(url,{...init,dispatcher});
-export const nodeScan=(url,options={})=>scan(url,{...options,fetchImpl:secureFetch,resolveHost:publicAddresses,renderPage:async(home,settings)=>{
-  const {renderPage}=await import('./render.js');
-  return renderPage(home,settings);
-}});
+// ROGI_RENDER=off disables headless rendering; client-rendered pages are then reported as unverified.
+export const renderEnabled=(env=process.env)=>env.ROGI_RENDER!=='off';
+export async function nodeScan(url,options={},{env=process.env,loadRenderer=()=>import('./render.js')}={}) {
+  let renderer;
+  const renderPage=renderEnabled(env)?async(home,settings)=>(await (renderer??=loadRenderer().then(m=>m.createRenderer()))).render(home,settings):undefined;
+  try {
+    return await scan(url,{...options,fetchImpl:secureFetch,resolveHost:publicAddresses,renderPage});
+  } finally {
+    // The browser is shared by every page in this scan and always closed with it.
+    if(renderer)await (await renderer.catch(()=>null))?.close();
+  }
+}

@@ -29,6 +29,25 @@ test('browser-rendered DOM supplies H1 and internal links for app shells',async(
  const failed=await scan('https://example.com/',{...base,renderPage:async()=>{throw Error('browser unavailable');}});
  assert.equal(failed.score,null);assert.equal(failed.renderStatus,'unavailable');
 });
+test('shell detection covers non-module bundles and framework mounts but not server-rendered apps',()=>{
+ const shells=['<div id="root"></div><script defer src="/static/js/main.js"></script>','<app-root></app-root><script src="/main.js"></script>','<div id="__nuxt"></div><script src="/_nuxt/app.js"></script>','<div id="___gatsby"></div><script src="/app.js"></script>'];
+ for(const shell of shells){const r=analyze('<title>T</title>'+shell,'https://example.com/');assert.equal(r.needsRender,true,shell);assert.equal(r.appShell,true,shell);assert.equal(r.checks.find(x=>x.id==='h1').status,'unknown',shell);}
+ const ssr='<title>T</title><div id="app"><h1>Server rendered</h1><p>'+'Long server-rendered copy. '.repeat(10)+'</p><a href="/about">About</a></div><script type="module" src="/app.js"></script>';
+ const r=analyze(ssr,'https://example.com/');assert.equal(r.needsRender,false);assert.equal(r.appShell,false);assert.equal(r.checks.find(x=>x.id==='h1').status,'pass');
+ const noScript=analyze('<title>T</title><div id="root"></div>','https://example.com/');assert.equal(noScript.needsRender,false);assert.equal(noScript.checks.find(x=>x.id==='h1').status,'fail');
+});
+test('a single-page app with an H1 but no internal links keeps a score',async()=>{
+ const page='<title>One page</title><meta name="description" content="One page"><div id="root"><h1>One page</h1></div><script type="module" src="/assets/app.js"></script>';
+ const fetchImpl=async url=>new Response(url.endsWith('/robots.txt')?'User-agent: *':url.endsWith('/sitemap.xml')?'<urlset></urlset>':page,{headers:{'content-type':url.endsWith('.txt')?'text/plain':'text/html'}});
+ const base={resolveHost:async()=>{},fetchImpl};
+ const raw=await scan('https://example.com/',base);
+ assert.equal(typeof raw.score,'number');assert.equal(raw.scoreReason,undefined);assert.equal(raw.renderStatus,'unavailable');assert.ok(raw.renderDetail);
+ assert.equal(raw.checks.find(x=>x.id==='internal').status,'unknown');
+ const rendered=await scan('https://example.com/',{...base,renderPage:async()=>({html:page})});
+ assert.equal(rendered.renderStatus,'success');assert.equal(typeof rendered.score,'number');assert.equal(rendered.checks.find(x=>x.id==='internal').status,'fail');assert.equal(rendered.checks.find(x=>x.id==='h1').status,'pass');
+ const empty=await scan('https://example.com/',{...base,renderPage:async()=>({html:'<div id="root"></div>'})});
+ assert.equal(empty.renderStatus,'unavailable');assert.equal(typeof empty.score,'number');assert.match(empty.renderDetail,/H1 veya iç bağlantılar oluşmadı/);
+});
 test('optional linked-page crawl stays on origin, caps at three and reports page findings',async()=>{
  const calls=[],home='<title>Home</title><h1>Home</h1>'+['/a','/b','/c','/d','/a','https://other.com/x','/logout','/search?q=x'].map(href=>'<a href="'+href+'">page</a>').join('');
  const r=await scan('https://example.com/',{checkPages:true,resolveHost:async()=>{},fetchImpl:async url=>{calls.push(url);if(url.endsWith('/robots.txt'))return new Response('User-agent: *');if(url.endsWith('/sitemap.xml'))return new Response('<urlset></urlset>');return new Response(url==='https://example.com/'?home:'<title>Linked</title><h1>Linked</h1>',{headers:{'content-type':'text/html'}});}});

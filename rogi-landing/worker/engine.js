@@ -67,7 +67,7 @@ export function summarize(checks) {
   return {passed,failed,total:checks.length,unknown:checks.filter(x=>x.status==='unknown').length,notApplicable:checks.filter(x=>x.status==='na').length,score:passed+failed?Math.round(passed/(passed+failed)*100):null};
 }
 export function sortChecks(checks) { return [...checks].sort((a,b)=>({fail:0,unknown:1,pass:2,na:3}[a.status]-{fail:0,unknown:1,pass:2,na:3}[b.status]) || priorities[a.priority]-priorities[b.priority]); }
-export function analyze(html, url, status=200, headers=new Headers()) {
+export function analyze(html, url, status=200, headers=new Headers(), {rendered=false}={}) {
   const nodes=[]; function visit(n){if(n.tagName)nodes.push(n);for(const c of n.childNodes||[])visit(c);} visit(parse(html));
   const all=tag=>nodes.filter(n=>n.tagName===tag), attrs=n=>Object.fromEntries((n?.attrs||[]).map(a=>[a.name,a.value]));
   const text=n=>(n?.nodeName==='#text'?n.value:(n?.childNodes||[]).map(text).join('')).trim();
@@ -75,7 +75,12 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   const title=text(all('title')[0]), description=meta('description'), robots=meta('robots')+', '+meta('googlebot')+', '+(headers.get('x-robots-tag')||'');
   const canonicals=all('link').filter(n=>(attrs(n).rel||'').toLowerCase().split(/\s+/).includes('canonical'));
   const canonical=attrs(canonicals[0]).href||'', headings=nodes.filter(n=>/^h[1-6]$/.test(n.tagName)).map(n=>({level:Number(n.tagName[1]),text:text(n)})), images=all('img'), checks=[];
-  const clientRendered=all('script').some(n=>attrs(n).src&&(attrs(n).type||'').toLowerCase()==='module')&&nodes.some(n=>['root','app','__next'].includes(attrs(n).id));
+  // A client-rendered shell has an external script plus a framework mount point that holds almost no text.
+  // Rendered DOM is never treated as a shell again, so missing H1/links there are ordinary failures.
+  const mountIds=new Set(['root','app','__next','__nuxt','___gatsby','svelte','q-app']);
+  const mounts=nodes.filter(n=>n.tagName==='app-root'||mountIds.has(attrs(n).id));
+  const externalScript=all('script').some(n=>attrs(n).src&&(attrs(n).type||'').toLowerCase()!=='application/ld+json');
+  const clientRendered=!rendered&&externalScript&&mounts.some(n=>text(n).length<200);
   const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:({alt:'Orta',internal:'Orta',schema:'Orta',https:'Orta',http:'Orta'}[id]||'Düşük'),fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
   add('title','Sayfa başlığı',!!title,title||'Başlık bulunamadı.','İçerik','Yüksek','Sayfayı açıklayan bir title ekleyin.');
   add('description','Meta açıklama',!!description,description||'Meta açıklama bulunamadı.','İçerik','Orta','Sayfaya özgü meta description ekleyin.');
@@ -94,7 +99,13 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   add('schema','Yapısal veri JSON biçimi',!invalidSchema,schemas.length+' JSON-LD bloğu; şema uygunluğu ayrıca doğrulanmalıdır.','Teknik','Orta','JSON-LD sözdizimini düzeltin; ilgili şema türünü doğrulayın.',schemas.length?undefined:'na');
   add('https','HTTPS',new URL(url).protocol==='https:',new URL(url).protocol,'Güvenlik','Yüksek','Siteyi HTTPS üzerinden yayınlayın.');
   add('http','Sayfa yanıtı',status===200,'HTTP '+status,'Teknik','Yüksek','Sayfanın beklenen HTTP durum koduyla dönmesini sağlayın.');
-  return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length,appShell:clientRendered&&(!h1Count||!internalLinks.length)};
+  return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length,needsRender:clientRendered&&(!h1Count||!internalLinks.length),appShell:clientRendered&&!h1Count&&!internalLinks.length};
+}
+// Returns the rendered analysis only when JavaScript produced verifiable content (an H1 or an internal link).
+async function renderAnalysis(page, settings) {
+  const rendered=await settings.renderPage(page,settings);
+  const next=analyze(rendered.html,page.url,page.status,page.headers,{rendered:true});
+  return next.headings.some(h=>h.level===1)||next.internalLinkCount?next:null;
 }
 export async function crawlLinkedPages(links, homeUrl, settings={}) {
   const origin=new URL(homeUrl).origin, selected=[], seen=new Set([homeUrl]);
@@ -113,8 +124,8 @@ export async function crawlLinkedPages(links, homeUrl, settings={}) {
       if(page.status!==200)return {url:page.url,status:page.status===404||page.status===410?'fail':'unknown',httpStatus:page.status,reason:'http_status'};
       if(!/text\/html|application\/xhtml\+xml/i.test(page.type))return {url:page.url,status:'na',httpStatus:page.status,reason:'not_html'};
       let result=analyze(page.body,page.url,page.status,page.headers);
-      if(result.appShell&&settings.renderPage){
-        try {const rendered=await settings.renderPage(page,settings);result=analyze(rendered.html,page.url,page.status,page.headers);} catch(error) {if(settings.signal?.aborted)throw error;}
+      if(result.needsRender&&settings.renderPage){
+        try {const next=await renderAnalysis(page,settings);if(next)result=next;} catch(error) {if(settings.signal?.aborted)throw error;}
       }
       const summary=summarize(result.checks);
       return {url:page.url,status:result.appShell?'unknown':'pass',httpStatus:page.status,title:result.title,description:result.description,score:result.appShell?null:summary.score,passed:summary.passed,failed:summary.failed,checks:result.checks.filter(x=>x.status==='fail'||x.status==='unknown').map(x=>({id:x.id,label:x.label,detail:x.detail,priority:x.priority,fix:x.fix,status:x.status}))};
@@ -123,8 +134,8 @@ export async function crawlLinkedPages(links, homeUrl, settings={}) {
       return {url,status:'unknown',httpStatus:null,reason:'unavailable'};
     }
   }
-  const concurrency=settings.renderPage?1:2;
-  for(let index=0;index<targets.length;index+=concurrency)results.push(...await Promise.all(targets.slice(index,index+concurrency).map(inspect)));
+  // Renderers serialize their own browser work, so plain HTML pages keep two concurrent fetches.
+  for(let index=0;index<targets.length;index+=2)results.push(...await Promise.all(targets.slice(index,index+2).map(inspect)));
   return {limit:3,discovered:selected.length,omitted:Math.max(0,selected.length-targets.length),results};
 }
 export async function scan(input, options={}) {
@@ -132,13 +143,12 @@ export async function scan(input, options={}) {
   if(!/text\/html|application\/xhtml\+xml/i.test(home.type)) throw new AuditError('Adres HTML sayfası döndürmedi.',422,'not_html');
   if(home.status===429||home.status>=500) throw new AuditError('Hedef site geçici olarak taranamadı.',502,'target_unavailable');
   let analysis=analyze(home.body,home.url,home.status,home.headers), origin=new URL(home.url).origin;
-  let renderStatus=analysis.appShell?'unavailable':'not_needed';
-  let renderDetail='';
-  if(analysis.appShell&&options.renderPage) {
+  let renderStatus=analysis.needsRender?'unavailable':'not_needed';
+  let renderDetail=analysis.needsRender&&!options.renderPage?'Bu ortamda tarayıcı ile JavaScript içeriği oluşturulamıyor; ilk HTML yanıtı gösteriliyor.':'';
+  if(analysis.needsRender&&options.renderPage) {
     try {
-      const rendered=await options.renderPage(home,settings);
-      const next=analyze(rendered.html,home.url,home.status,home.headers);
-      if(next.appShell)renderDetail='Tarayıcı açıldı ancak H1 veya iç bağlantılar oluşmadı; sonuç doğrulanamadı.';
+      const next=await renderAnalysis(home,settings);
+      if(!next)renderDetail='Tarayıcı açıldı ancak H1 veya iç bağlantılar oluşmadı; sonuç doğrulanamadı.';
       else {analysis=next;renderStatus='success';}
     } catch(error) {
       if(signal.aborted)throw error;
