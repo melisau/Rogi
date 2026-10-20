@@ -75,10 +75,12 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   const title=text(all('title')[0]), description=meta('description'), robots=meta('robots')+', '+meta('googlebot')+', '+(headers.get('x-robots-tag')||'');
   const canonicals=all('link').filter(n=>(attrs(n).rel||'').toLowerCase().split(/\s+/).includes('canonical'));
   const canonical=attrs(canonicals[0]).href||'', headings=nodes.filter(n=>/^h[1-6]$/.test(n.tagName)).map(n=>({level:Number(n.tagName[1]),text:text(n)})), images=all('img'), checks=[];
+  const clientRendered=all('script').some(n=>attrs(n).src&&(attrs(n).type||'').toLowerCase()==='module')&&nodes.some(n=>['root','app','__next'].includes(attrs(n).id));
   const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:({alt:'Orta',internal:'Orta',schema:'Orta',https:'Orta',http:'Orta'}[id]||'Düşük'),fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
   add('title','Sayfa başlığı',!!title,title||'Başlık bulunamadı.','İçerik','Yüksek','Sayfayı açıklayan bir title ekleyin.');
   add('description','Meta açıklama',!!description,description||'Meta açıklama bulunamadı.','İçerik','Orta','Sayfaya özgü meta description ekleyin.');
-  add('h1','Ana H1 başlığı',headings.filter(x=>x.level===1).length===1,headings.filter(x=>x.level===1).length+' H1 bulundu.','İçerik','Orta','Sayfanın ana konusunu belirten H1 yapısını gözden geçirin.');
+  const h1Count=headings.filter(x=>x.level===1).length;
+  add('h1','Ana H1 başlığı',h1Count===1,h1Count||!clientRendered?h1Count+' H1 bulundu.':'Ham HTML içinde H1 yok; JavaScript ile oluşan sayfa ayrıca doğrulanmalı.','İçerik','Orta','Sayfanın ana konusunu belirten H1 yapısını gözden geçirin.',clientRendered&&!h1Count?'unknown':undefined);
   add('hierarchy','Başlık hiyerarşisi',!headings.some((h,i)=>i&&h.level>headings[i-1].level+1),'Başlık düzeyleri incelendi.','İçerik','Düşük','Başlık düzeylerini mantıksal sıraya koyun.',headings.length?undefined:'na');
   let canonicalValid=false;try{canonicalValid=canonicals.length===1&&['http:','https:'].includes(new URL(canonical,url).protocol)&&!!canonical;}catch{}
   add('canonical','Canonical etiketi',canonicalValid,canonical||'Canonical bulunamadı.','Teknik','Orta','Tercih edilen sayfa adresine tek bir canonical ekleyin.');
@@ -86,13 +88,13 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   const missing=images.filter(n=>!Object.hasOwn(attrs(n),'alt'));
   add('alt','Görsel alt niteliği',!missing.length,images.length+' görsel; '+missing.length+' görselde alt niteliği eksik. Boş alt metnin uygunluğu elle doğrulanmalıdır.','Medya','Orta','İçerik görsellerine açıklayıcı alt metin, dekoratif görsellere alt="" ekleyin.',images.length?undefined:'na');
   const internalLinks=[...new Set(all('a').flatMap(n=>{const href=attrs(n).href;if(!href||href.startsWith('#'))return [];try{const u=new URL(href,url);return ['http:','https:'].includes(u.protocol)&&u.hostname===new URL(url).hostname?[u.href]:[];}catch{return [];}}))];
-  add('internal','İç bağlantılar',!!internalLinks.length,internalLinks.length+' iç bağlantı bulundu.','Bağlantılar','Düşük','İlgili içeriklere açıklayıcı bağlantılar ekleyin.');
+  add('internal','İç bağlantılar',!!internalLinks.length,internalLinks.length||!clientRendered?internalLinks.length+' iç bağlantı bulundu.':'Ham HTML içinde iç bağlantı yok; JavaScript ile oluşan sayfa ayrıca doğrulanmalı.','Bağlantılar','Düşük','İlgili içeriklere açıklayıcı bağlantılar ekleyin.',clientRendered&&!internalLinks.length?'unknown':undefined);
   const schemas=all('script').filter(n=>(attrs(n).type||'').toLowerCase()==='application/ld+json'); let invalidSchema=false;
   for(const n of schemas)try{JSON.parse(text(n));}catch{invalidSchema=true;}
   add('schema','Yapısal veri JSON biçimi',!invalidSchema,schemas.length+' JSON-LD bloğu; şema uygunluğu ayrıca doğrulanmalıdır.','Teknik','Orta','JSON-LD sözdizimini düzeltin; ilgili şema türünü doğrulayın.',schemas.length?undefined:'na');
   add('https','HTTPS',new URL(url).protocol==='https:',new URL(url).protocol,'Güvenlik','Yüksek','Siteyi HTTPS üzerinden yayınlayın.');
   add('http','Sayfa yanıtı',status===200,'HTTP '+status,'Teknik','Yüksek','Sayfanın beklenen HTTP durum koduyla dönmesini sağlayın.');
-  return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length};
+  return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length,appShell:clientRendered&&(!h1Count||!internalLinks.length)};
 }
 export async function crawlLinkedPages(links, homeUrl, settings={}) {
   const origin=new URL(homeUrl).origin, selected=[], seen=new Set([homeUrl]);
@@ -110,21 +112,39 @@ export async function crawlLinkedPages(links, homeUrl, settings={}) {
       const page=await fetchPage(url,settings);
       if(page.status!==200)return {url:page.url,status:page.status===404||page.status===410?'fail':'unknown',httpStatus:page.status,reason:'http_status'};
       if(!/text\/html|application\/xhtml\+xml/i.test(page.type))return {url:page.url,status:'na',httpStatus:page.status,reason:'not_html'};
-      const result=analyze(page.body,page.url,page.status,page.headers),summary=summarize(result.checks);
-      return {url:page.url,status:'pass',httpStatus:page.status,title:result.title,description:result.description,score:summary.score,passed:summary.passed,failed:summary.failed,checks:result.checks.filter(x=>x.status==='fail').map(x=>({id:x.id,label:x.label,detail:x.detail,priority:x.priority,fix:x.fix}))};
+      let result=analyze(page.body,page.url,page.status,page.headers);
+      if(result.appShell&&settings.renderPage){
+        try {const rendered=await settings.renderPage(page,settings);result=analyze(rendered.html,page.url,page.status,page.headers);} catch(error) {if(settings.signal?.aborted)throw error;}
+      }
+      const summary=summarize(result.checks);
+      return {url:page.url,status:result.appShell?'unknown':'pass',httpStatus:page.status,title:result.title,description:result.description,score:result.appShell?null:summary.score,passed:summary.passed,failed:summary.failed,checks:result.checks.filter(x=>x.status==='fail'||x.status==='unknown').map(x=>({id:x.id,label:x.label,detail:x.detail,priority:x.priority,fix:x.fix,status:x.status}))};
     } catch(error) {
       if(settings.signal?.aborted)throw error;
       return {url,status:'unknown',httpStatus:null,reason:'unavailable'};
     }
   }
-  for(let index=0;index<targets.length;index+=2)results.push(...await Promise.all(targets.slice(index,index+2).map(inspect)));
+  const concurrency=settings.renderPage?1:2;
+  for(let index=0;index<targets.length;index+=concurrency)results.push(...await Promise.all(targets.slice(index,index+concurrency).map(inspect)));
   return {limit:3,discovered:selected.length,omitted:Math.max(0,selected.length-targets.length),results};
 }
 export async function scan(input, options={}) {
   const signal=options.signal?AbortSignal.any([options.signal,AbortSignal.timeout(30000)]):AbortSignal.timeout(30000), settings={...options,signal}, home=await fetchPage(input,settings);
   if(!/text\/html|application\/xhtml\+xml/i.test(home.type)) throw new AuditError('Adres HTML sayfası döndürmedi.',422,'not_html');
   if(home.status===429||home.status>=500) throw new AuditError('Hedef site geçici olarak taranamadı.',502,'target_unavailable');
-  const analysis=analyze(home.body,home.url,home.status,home.headers), origin=new URL(home.url).origin;
+  let analysis=analyze(home.body,home.url,home.status,home.headers), origin=new URL(home.url).origin;
+  let renderStatus=analysis.appShell?'unavailable':'not_needed';
+  let renderDetail='';
+  if(analysis.appShell&&options.renderPage) {
+    try {
+      const rendered=await options.renderPage(home,settings);
+      const next=analyze(rendered.html,home.url,home.status,home.headers);
+      if(next.appShell)renderDetail='Tarayıcı açıldı ancak H1 veya iç bağlantılar oluşmadı; sonuç doğrulanamadı.';
+      else {analysis=next;renderStatus='success';}
+    } catch(error) {
+      if(signal.aborted)throw error;
+      renderDetail='Tarayıcıda JavaScript içeriği doğrulanamadı; ilk HTML yanıtı gösteriliyor.';
+    }
+  }
   const extras=await Promise.allSettled([fetchPage(origin+'/robots.txt',settings),fetchPage(origin+'/sitemap.xml',settings)]);
   for(const [index,id,label] of [[0,'robots','robots.txt'],[1,'sitemap','XML sitemap']]) {
     const result=extras[index]; let status,detail;
@@ -141,5 +161,5 @@ export async function scan(input, options={}) {
   }
   if(options.checkPages)analysis.pageAudit=await crawlLinkedPages(analysis.internalLinks,home.url,settings);
   analysis.checks=sortChecks(analysis.checks);
-  return {version:2,url:home.url,scannedAt:new Date().toISOString(),...analysis,...summarize(analysis.checks),manual:['Gerçek indeksleme ve robots.txt kurallarının etkisi','Google Search Console raporu','PageSpeed / Core Web Vitals','Gerçek cihaz ve kullanılabilirlik akışları','Güvenlik davranışının çalışma zamanında doğrulanması']};
+  return {version:2,url:home.url,scannedAt:new Date().toISOString(),...analysis,...summarize(analysis.checks),renderStatus,renderDetail,...(analysis.appShell?{score:null,scoreReason:'client_rendered_content'}:{}),manual:['Gerçek indeksleme ve robots.txt kurallarının etkisi','Google Search Console raporu','PageSpeed / Core Web Vitals','Gerçek cihaz ve kullanılabilirlik akışları','Güvenlik davranışının çalışma zamanında doğrulanması']};
 }

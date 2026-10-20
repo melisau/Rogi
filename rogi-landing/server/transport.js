@@ -19,4 +19,7 @@ export function checkedLookup(lookup=dnsLookup) {
 }
 const dispatcher=new Agent({connections:3,connect:{lookup:checkedLookup(),timeout:10000},headersTimeout:10000,bodyTimeout:10000});
 export const secureFetch=(url,init)=>nodeFetch(url,{...init,dispatcher});
-export const nodeScan=(url,options={})=>scan(url,{...options,fetchImpl:secureFetch,resolveHost:publicAddresses});
+export const nodeScan=(url,options={})=>scan(url,{...options,fetchImpl:secureFetch,resolveHost:publicAddresses,renderPage:async(home,settings)=>{
+  const {renderPage}=await import('./render.js');
+  return renderPage(home,settings);
+}});
