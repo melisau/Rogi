@@ -80,3 +80,14 @@ test('security header checks judge HSTS, CSP, framing, nosniff, referrer and coo
  const en=localizeReport({checks:analyze('<title>T</title>','https://example.com/',200,bad).checks},'en').checks;
  assert.match(en.find(c=>c.id==='csp').detail,/Report-Only is present/);assert.match(en.find(c=>c.id==='cookies').detail,/missing Secure: 1/);assert.equal(en.find(c=>c.id==='hsts').label,'HSTS (Strict-Transport-Security)');
 });
+test('mobile, language, hreflang, social and mixed-content checks',()=>{
+ const status=(html,url='https://example.com/tr')=>Object.fromEntries(analyze(html,url).checks.filter(c=>['viewport','lang','hreflang','social','mixed'].includes(c.id)).map(c=>[c.id,c.status]));
+ const good='<html lang="tr"><head><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="alternate" hreflang="tr" href="https://example.com/tr"><link rel="alternate" hreflang="en" href="https://example.com/en"><meta property="og:title" content="T"><meta property="og:description" content="D"><meta property="og:image" content="https://example.com/i.png"><link rel="stylesheet" href="https://example.com/a.css"></head><body><img src="/x.png" alt=""><a href="http://other.com/">plain link is fine</a></body></html>';
+ assert.deepEqual(status(good),{viewport:'pass',lang:'pass',hreflang:'pass',social:'pass',mixed:'pass'});
+ const bad='<html><head><meta name="viewport" content="width=device-width, maximum-scale=1, user-scalable=no"><link rel="alternate" hreflang="en" href="https://example.com/en"><meta property="og:title" content="T"><link rel="stylesheet" href="http://example.com/a.css"></head><body><img src="http://example.com/x.png"><form action="http://example.com/login"></form></body></html>';
+ assert.deepEqual(status(bad),{viewport:'fail',lang:'fail',hreflang:'fail',social:'fail',mixed:'fail'});
+ const mixed=analyze(bad,'https://example.com/tr').checks.find(c=>c.id==='mixed');assert.match(mixed.detail,/^3 kaynak HTTP/);
+ assert.deepEqual(status('<title>T</title>','http://example.com/'),{viewport:'fail',lang:'fail',hreflang:'na',social:'fail',mixed:'na'});
+ const en=localizeReport({checks:analyze(bad,'https://example.com/tr').checks},'en').checks;
+ assert.match(en.find(c=>c.id==='viewport').detail,/zooming is blocked/);assert.match(en.find(c=>c.id==='social').detail,/^Missing: og:description, og:image/);assert.match(en.find(c=>c.id==='mixed').detail,/^3 resource\(s\) load over HTTP/);assert.match(en.find(c=>c.id==='hreflang').detail,/own URL is not listed/);
+});

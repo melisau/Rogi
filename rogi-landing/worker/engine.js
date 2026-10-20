@@ -102,7 +102,7 @@ export function analyze(html, url, status=200, headers=new Headers(), {rendered=
   const mounts=nodes.filter(n=>n.tagName==='app-root'||mountIds.has(attrs(n).id));
   const externalScript=all('script').some(n=>attrs(n).src&&(attrs(n).type||'').toLowerCase()!=='application/ld+json');
   const clientRendered=!rendered&&externalScript&&mounts.some(n=>text(n).length<200);
-  const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:({alt:'Orta',internal:'Orta',schema:'Orta',https:'Orta',http:'Orta',csp:'Yüksek',cookies:'Orta'}[id]||'Düşük'),fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
+  const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:({alt:'Orta',internal:'Orta',schema:'Orta',https:'Orta',http:'Orta',csp:'Yüksek',cookies:'Orta',mixed:'Orta'}[id]||'Düşük'),fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
   add('title','Sayfa başlığı',!!title,title||'Başlık bulunamadı.','İçerik','Yüksek','Sayfayı açıklayan bir title ekleyin.');
   add('description','Meta açıklama',!!description,description||'Meta açıklama bulunamadı.','İçerik','Orta','Sayfaya özgü meta description ekleyin.');
   const h1Count=headings.filter(x=>x.level===1).length;
@@ -120,6 +120,21 @@ export function analyze(html, url, status=200, headers=new Headers(), {rendered=
   add('schema','Yapısal veri JSON biçimi',!invalidSchema,schemas.length+' JSON-LD bloğu; şema uygunluğu ayrıca doğrulanmalıdır.','Teknik','Orta','JSON-LD sözdizimini düzeltin; ilgili şema türünü doğrulayın.',schemas.length?undefined:'na');
   add('https','HTTPS',new URL(url).protocol==='https:',new URL(url).protocol,'Güvenlik','Yüksek','Siteyi HTTPS üzerinden yayınlayın.');
   securityHeaderChecks(headers,url).forEach(c=>add(...c));
+  // Mobile, language and sharing signals visible in the HTML.
+  const viewport=(attrs(all('meta').find(n=>(attrs(n).name||'').toLowerCase()==='viewport')).content||'').toLowerCase();
+  const zoomLocked=/user-scalable\s*=\s*(no|0)\b/.test(viewport)||/maximum-scale\s*=\s*1(\.0*)?\b/.test(viewport);
+  add('viewport','Mobil viewport',/width\s*=\s*device-width/.test(viewport)&&!zoomLocked,!viewport?'Viewport meta etiketi bulunamadı.':zoomLocked?viewport+'; yakınlaştırma engellenmiş.':viewport,'Mobil','Yüksek','<meta name="viewport" content="width=device-width, initial-scale=1"> kullanın; yakınlaştırmayı engellemeyin.');
+  const lang=(attrs(all('html')[0]).lang||'').trim();
+  add('lang','Sayfa dili (html lang)',/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(lang),lang?'lang="'+lang+'"':'html etiketinde lang niteliği bulunamadı.','İçerik','Orta','<html lang="tr"> gibi sayfanın dilini belirtin.');
+  const alternates=all('link').filter(n=>(attrs(n).rel||'').toLowerCase().split(/\s+/).includes('alternate')&&attrs(n).hreflang);
+  let hreflangValid=true,selfReferenced=false;
+  for(const n of alternates){try{const target=new URL(attrs(n).href||'',url);if(!attrs(n).href||!['http:','https:'].includes(target.protocol))hreflangValid=false;target.hash='';if(target.href===new URL(url).href)selfReferenced=true;}catch{hreflangValid=false;}}
+  add('hreflang','Hreflang alternatifleri',hreflangValid&&selfReferenced,!alternates.length?'Hreflang bağlantısı yok.':alternates.length+' hreflang bağlantısı; '+(!hreflangValid?'geçersiz adres var.':selfReferenced?'sayfa kendi dilini de listeliyor.':'sayfanın kendi adresi listede yok.'),'Teknik','Düşük','Her dil sürümünü ve sayfanın kendisini mutlak adreslerle hreflang listesine ekleyin.',alternates.length?undefined:'na');
+  const property=name=>all('meta').filter(n=>(attrs(n).property||attrs(n).name||'').toLowerCase()===name).map(n=>attrs(n).content||'').find(Boolean)||'';
+  const missingOg=['og:title','og:description','og:image'].filter(p=>!property(p));
+  add('social','Sosyal paylaşım metaverisi',!missingOg.length,missingOg.length?'Eksik: '+missingOg.join(', ')+'.':'og:title, og:description ve og:image var'+(property('twitter:card')?'; twitter:card: '+property('twitter:card')+'.':'.'),'İçerik','Düşük','og:title, og:description ve og:image etiketlerini ekleyin.');
+  const insecureRefs=new URL(url).protocol!=='https:'?[]:nodes.flatMap(n=>{const a=attrs(n),rel=(a.rel||'').toLowerCase().split(/\s+/);const refs=['img','script','iframe','audio','video','source','embed','track'].includes(n.tagName)?[a.src]:n.tagName==='link'&&rel.some(r=>['stylesheet','icon','preload','modulepreload','manifest'].includes(r))?[a.href]:n.tagName==='form'?[a.action]:n.tagName==='object'?[a.data]:[];return refs.filter(v=>v&&/^\s*http:\/\//i.test(v));});
+  add('mixed','Karışık içerik',!insecureRefs.length,new URL(url).protocol!=='https:'?'HTTPS olmayan sayfada uygulanamaz.':insecureRefs.length?insecureRefs.length+' kaynak HTTP ile yükleniyor: '+[...new Set(insecureRefs)].slice(0,3).join(', '):'HTML içinde HTTP ile yüklenen kaynak bulunamadı.','Güvenlik','Yüksek','Görsel, script, stil ve form adreslerini HTTPS yapın.',new URL(url).protocol!=='https:'?'na':undefined);
   add('http','Sayfa yanıtı',status===200,'HTTP '+status,'Teknik','Yüksek','Sayfanın beklenen HTTP durum koduyla dönmesini sağlayın.');
   return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length,needsRender:clientRendered&&(!h1Count||!internalLinks.length),appShell:clientRendered&&!h1Count&&!internalLinks.length};
 }
