@@ -7,6 +7,13 @@
       "maxDuration": 45
     }
   },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/tr",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/:path*",
