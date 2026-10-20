@@ -27,6 +27,7 @@ Build output is generated in `dist/server/` as Cloudflare Worker modules.
 - Interactive sample report, workflow instructions, and FAQ.
 - Responsive desktop and mobile layouts.
 - Existing Turkish audit workspace, live website scan API, and local project review.
+- Optional linked-page audit checks up to three same-origin HTML pages from the entry page's first 20 links, with separate findings per page. The main score covers only the entry page.
 - Security and mobile checklists require verification in real flows and on devices.
 - The landing-page score is illustrative, not a real audit result.
 

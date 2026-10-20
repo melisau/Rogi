@@ -48,7 +48,7 @@ Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun öz
 - [ ] Ücretli ürün/plan/ödeme kararı. Kullanıcı şu an ücretsiz kişisel deneme seçti; ücretli hizmet açılmayacak.
 
 ## P3 — Kalite ve tarama kapsamı
-- [ ] Kontrollü çok sayfalı tarama.
+- [x] İsteğe bağlı kontrollü çok sayfalı tarama: giriş sayfasındaki ilk 20 bağlantıdan en fazla 3 aynı-origin HTML sayfası, iki eşzamanlı istek; sayfa başına ayrı puan ve bulgular. Ana puan yalnız giriş sayfasına aittir.
 - [x] İsteğe bağlı bozuk iç bağlantı kontrolü ve URL/HTTP/durum kanıt listesi. İlk 20 adaydan en fazla 10 aynı-origin bağlantı; iki eşzamanlı istek. IANA üzerinde yerel tarayıcı ve canlı API aynı sonucu verdi: 8 geçti, 2 doğrulanamadı; HTTP 200.
 - [ ] PageSpeed/Core Web Vitals ölçümü.
 - [ ] Kapsamlı erişilebilirlik ve gerçek ekran okuyucu doğrulaması. Skip link, odak, seçili durum ve temel klavye akışları geçti.
@@ -58,7 +58,7 @@ Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun öz
 - [ ] Yerel Git eşitleme: asıl Windows klasörüne yazma hâlâ başarısız. İzole çalışma kopyası test edilip GitHub'a kaydediliyor.
 
 ## Kanıt ve sınırlar
-- Son tam UI yayını: 68 test + build ve gerçek Postgres kontrolleri geçti. Bağlantı motoru ve UI ile 71 test geçti; canlı API ve yerel gerçek tarayıcı kontrolü tamamlandı.
+- Son tam UI yayını: 68 test + build ve gerçek Postgres kontrolleri geçti. Bağlantı motoru ve UI ile 71 test geçti; canlı API ve yerel gerçek tarayıcı kontrolü tamamlandı. Çok sayfalı tarama yerel önizlemede IANA ile ve 73 test + build ile doğrulandı; henüz yayına alınmadı.
 - QA gerçek hesap bilgileri .env önekli yerel dosyalarda; GitHub'a veya yayına gönderilmez.
 - UI oluştur/düzenle/kaydet/listele/aç ve TR/EN akışları QA fixturelarıyla; API kalıcılık/izolasyonu gerçek Neon ile ayrı doğrulandı.
 - Normal tarama ve kontrol listesi notları yereldir. Yalnız açık bulut eylemi sunucu raporu kaydeder.

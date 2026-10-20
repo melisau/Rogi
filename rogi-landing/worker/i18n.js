@@ -1,4 +1,8 @@
 export const uiEnglish={
+"Bağlı sayfaları tara (en fazla 3)":"Scan linked pages (up to 3)",
+"Bağlı sayfa sonuçları":"Linked page results",
+"Ana puan yalnız giriş sayfasına aittir. İlk 20 iç bağlantıdan en fazla 3 aynı adres sayfası incelenir; bu tüm siteyi kapsamaz.":"The main score applies only to the entry page. Up to 3 same-origin pages from the first 20 internal links are reviewed; this does not cover the whole site.",
+"Bu kapsamda taranacak bağlı sayfa yok.":"No linked pages to scan within this scope.",
 "Sayfada bulunan ilk 20 bağlantı arasından aynı site adresindeki en fazla 10 bağlantı incelenir. Bu sonuç tüm sitenin tarandığı anlamına gelmez.":"Up to 10 links on the same site address are checked from the first 20 links found on the page. This does not represent a crawl of the entire site.",
 "İç bağlantıları kontrol et (en fazla 10)":"Check internal links (up to 10)",
 "İç bağlantı sonuçları":"Internal link results",
@@ -345,7 +349,8 @@ export function localizeReport(report,language='tr'){
  });
  const manualTr=report.manualTranslations?.tr||report.manual||[];
  const manualEn=manualTr.map(item=>translateUiText(item,'en'));
- return {...report,locale:lang,checks,manual:lang==='en'?manualEn:manualTr,manualTranslations:{tr:manualTr,en:manualEn}};
+ const pageAudit=report.pageAudit?{...report.pageAudit,results:report.pageAudit.results.map(page=>({...page,checks:page.checks?.map(check=>({...check,label:lang==='en'?labels[check.id]||check.label:check.label,fix:lang==='en'?fixes[check.id]||check.fix:check.fix}))}))}:undefined;
+ return {...report,locale:lang,checks,...(pageAudit?{pageAudit}:{}),manual:lang==='en'?manualEn:manualTr,manualTranslations:{tr:manualTr,en:manualEn}};
 }
 
 export const clientI18n='const uiEnglish='+JSON.stringify(uiEnglish)+';\n'+translateUiText.toString()+'\n'+localizeReport.toString();

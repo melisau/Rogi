@@ -33,7 +33,7 @@ export function createScanHandler({runScan=scan,now=()=>Date.now(),maxPerMinute=
       lease=await acquireLease?.({client:key});
       if(lease&&!lease.allowed)return reply({error:lease.reason==='capacity'?'Tarama kapasitesi dolu. Tekrar deneyin.':'Tarama sınırına ulaşıldı. Bir dakika sonra tekrar deneyin.',code:'rate_limited'},429,{'retry-after':String(lease.retryAfter||10)});
       const allowedHosts=env.SCAN_ALLOWED_HOSTS?env.SCAN_ALLOWED_HOSTS.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean):undefined;
-      const report=await runScan(url.href,{allowedHosts,signal:request.signal,checkLinks:body.checkLinks===true});
+      const report=await runScan(url.href,{allowedHosts,signal:request.signal,checkLinks:body.checkLinks===true,checkPages:body.checkPages===true});
       return reply(Array.isArray(report.checks)?localizeReport(report,language):report);
     }catch(e){
       if(request.signal.aborted)return reply({error:'Tarama iptal edildi. Yeniden başlatabilirsiniz.',code:'cancelled'},499);
