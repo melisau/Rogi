@@ -1,0 +1,19 @@
+name: Debug test output
+on:
+  push:
+    branches: [claude/ci-debug]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rogi-landing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: |
+          node --test --test-reporter=tap tests/*.test.mjs > out.txt 2>&1 || true
+          grep -nE "^ *not ok|error:|expected:|actual:|operator|Error|at .*\.mjs|failureType|code:" out.txt | head -80 | while IFS= read -r line; do echo "::warning::$line"; done
