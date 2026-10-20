@@ -330,26 +330,27 @@ export function localizeReport(report,language='tr'){
  const lang=language==='en'?'en':'tr';
  const labels={title:'Page title',description:'Meta description',h1:'Main H1 heading',hierarchy:'Heading hierarchy',canonical:'Canonical tag',index:'Indexing signals',alt:'Image alt attribute',internal:'Internal links',schema:'Structured-data JSON',https:'HTTPS',http:'Page response',robots:'robots.txt',sitemap:'XML sitemap'};
  const fixes={title:'Add a descriptive title for the page.',description:'Add a page-specific meta description.',h1:'Review the main H1 heading and the page’s structure.',hierarchy:'Put heading levels in a logical order.',canonical:'Add one canonical link pointing to the preferred page URL.',index:'Remove noindex from pages intended for indexing; verify robots.txt and Search Console.',alt:'Add descriptive alt text to content images and alt="" to decorative images.',internal:'Add descriptive links to related content.',schema:'Fix JSON-LD syntax and verify the relevant schema type.',https:'Publish the website over HTTPS.',http:'Return the expected HTTP status code.',robots:'Verify the robots.txt file and crawl rules.',sitemap:'Publish a valid sitemap; verify any custom sitemap path separately.'};
- const checks=report.checks.map(c=>{
+ const localizeCheck=(c,context)=>{
    const tr=c.translations?.tr||{label:c.label,detail:c.detail,fix:c.fix,verify:c.verify,category:c.category,priority:c.priority,effort:c.effort};
    const en={...tr,label:labels[c.id]||tr.label,fix:fixes[c.id]||tr.fix,verify:['robots','sitemap'].includes(c.id)?'Open the file URL and scan again.':'Publish the change and scan the same URL again.',category:translateUiText(tr.category,'en'),priority:translateUiText(tr.priority,'en'),effort:translateUiText(tr.effort,'en')};
    switch(c.id){
-    case 'title':en.detail=report.title||'No page title found.';break;
-    case 'description':en.detail=report.description||'No meta description found.';break;
-    case 'h1':en.detail=(report.headings||[]).filter(h=>h.level===1).length+' H1 heading(s) found.';break;
+    case 'title':en.detail=context.title||'No page title found.';break;
+    case 'description':en.detail=context.description||'No meta description found.';break;
+    case 'h1':en.detail=(context.headings?context.headings.filter(h=>h.level===1).length:(tr.detail.match(/^\d+/)?.[0]||'0'))+' H1 heading(s) found.';break;
     case 'hierarchy':en.detail='Heading levels inspected.';break;
     case 'canonical':en.detail=tr.detail==='Canonical bulunamadı.'?'No canonical link found.':tr.detail;break;
     case 'index':en.detail=tr.detail.includes('gerçek indeksleme doğrulanmadı')?'No noindex signal found in HTML or HTTP headers; actual indexing is unverified.':tr.detail;break;
-    case 'alt':{const missing=tr.detail.match(/;\s*(\d+)/)?.[1]||'0';en.detail=report.images+' images; '+missing+' lack an alt attribute. Verify manually whether empty alt text is appropriate.';break;}
-    case 'internal':en.detail=(tr.detail.match(/^\d+/)?.[0]||(report.internalLinks||[]).length)+' internal links found (report list capped at 20).';break;
+    case 'alt':{const missing=tr.detail.match(/;\s*(\d+)/)?.[1]||'0';en.detail=(context.images??tr.detail.match(/^\d+/)?.[0]??'0')+' images; '+missing+' lack an alt attribute. Verify manually whether empty alt text is appropriate.';break;}
+    case 'internal':en.detail=(tr.detail.match(/^\d+/)?.[0]||(context.internalLinks||[]).length)+' internal links found (report list capped at 20).';break;
     case 'schema':en.detail=(tr.detail.match(/^\d+/)?.[0]||'0')+' JSON-LD blocks; schema suitability requires separate verification.';break;
     case 'robots':case 'sitemap':en.detail=(tr.detail.match(/^HTTP \d+/)?.[0]?tr.detail.match(/^HTTP \d+/)[0]+'; ':'')+(c.status==='unknown'?'The file could not be verified (network, DNS, timeout, size, or access limitation).':c.status==='pass'?'The file was accessible and its format was recognized.':'The file is missing or its format was not recognized.');break;
    }
    return {...c,...(lang==='en'?en:tr),translations:{tr,en}};
- });
+ };
+ const checks=report.checks.map(c=>localizeCheck(c,report));
  const manualTr=report.manualTranslations?.tr||report.manual||[];
  const manualEn=manualTr.map(item=>translateUiText(item,'en'));
- const pageAudit=report.pageAudit?{...report.pageAudit,results:report.pageAudit.results.map(page=>({...page,checks:page.checks?.map(check=>({...check,label:lang==='en'?labels[check.id]||check.label:check.label,fix:lang==='en'?fixes[check.id]||check.fix:check.fix}))}))}:undefined;
+ const pageAudit=report.pageAudit?{...report.pageAudit,results:report.pageAudit.results.map(page=>({...page,checks:page.checks?.map(check=>localizeCheck(check,page))}))}:undefined;
  return {...report,locale:lang,checks,...(pageAudit?{pageAudit}:{}),manual:lang==='en'?manualEn:manualTr,manualTranslations:{tr:manualTr,en:manualEn}};
 }
 
