@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {safeUrl,isPublicAddress,readLimited,fetchPage,analyze,scan,summarize,resolvePublicHost,crawlLinkedPages} from '../worker/engine.js';
+import {safeUrl,isPublicAddress,readLimited,fetchPage,analyze,scan,summarize,resolvePublicHost,crawlLinkedPages,securityHeaderChecks} from '../worker/engine.js';
+import {localizeReport} from '../worker/i18n.js';
 import {createScanHandler} from '../worker/audit.js';
 const html='<title>Rogi &amp; Audit</title><meta NAME=description CONTENT="Site description"><h1>Başlık</h1><img ALT = ""><a>no link</a><script type="application/ld+json">{"@type":"WebSite"}</script>';
 const req=(body={url:'https://example.com'},headers={})=>new Request('https://rogi.test/api/scan',{method:'POST',headers:{'content-type':'application/json',...headers},body:typeof body==='string'?body:JSON.stringify(body)});
@@ -65,3 +66,17 @@ test('concurrency permit released after failure',async()=>{let release;const h=c
 test('structured timeout status',async()=>{const h=createScanHandler({runScan:async()=>{throw new DOMException('timeout','TimeoutError');}});assert.equal((await h(req())).status,504);});
 
 test('unconfigured default transport fails closed',async()=>{const {default:audit}=await import('../worker/audit.js');assert.equal((await audit.fetch(req())).status,503);});
+
+test('security header checks judge HSTS, CSP, framing, nosniff, referrer and cookie flags',()=>{
+ const status=(headers,url='https://example.com/')=>Object.fromEntries(analyze('<title>T</title>',url,200,headers).checks.filter(c=>c.category==='Güvenlik').map(c=>[c.id,c.status]));
+ const good=new Headers({'strict-transport-security':'max-age=63072000; includeSubDomains','content-security-policy':"default-src 'self'; frame-ancestors 'none'",'x-content-type-options':'nosniff','referrer-policy':'no-referrer, strict-origin-when-cross-origin'});
+ good.append('set-cookie','sid=1; Path=/; Secure; HttpOnly; SameSite=Lax');
+ assert.deepEqual(status(good),{https:'pass',hsts:'pass',csp:'pass',framing:'pass',nosniff:'pass',referrer:'pass',cookies:'pass'});
+ const bad=new Headers({'strict-transport-security':'max-age=300','content-security-policy-report-only':"default-src 'self'",'x-frame-options':'ALLOW-FROM https://x.com','referrer-policy':'unsafe-url'});
+ bad.append('set-cookie','a=1; Path=/');
+ assert.deepEqual(status(bad),{https:'pass',hsts:'fail',csp:'fail',framing:'fail',nosniff:'fail',referrer:'fail',cookies:'fail'});
+ assert.deepEqual(status(new Headers({'x-frame-options':'sameorigin'}),'http://example.com/'),{https:'fail',hsts:'na',csp:'fail',framing:'pass',nosniff:'fail',referrer:'fail',cookies:'na'});
+ const tuples=securityHeaderChecks(bad,'https://example.com/');assert.equal(tuples.length,6);
+ const en=localizeReport({checks:analyze('<title>T</title>','https://example.com/',200,bad).checks},'en').checks;
+ assert.match(en.find(c=>c.id==='csp').detail,/Report-Only is present/);assert.match(en.find(c=>c.id==='cookies').detail,/missing Secure: 1/);assert.equal(en.find(c=>c.id==='hsts').label,'HSTS (Strict-Transport-Security)');
+});

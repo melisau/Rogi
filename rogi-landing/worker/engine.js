@@ -67,6 +67,27 @@ export function summarize(checks) {
   return {passed,failed,total:checks.length,unknown:checks.filter(x=>x.status==='unknown').length,notApplicable:checks.filter(x=>x.status==='na').length,score:passed+failed?Math.round(passed/(passed+failed)*100):null};
 }
 export function sortChecks(checks) { return [...checks].sort((a,b)=>({fail:0,unknown:1,pass:2,na:3}[a.status]-{fail:0,unknown:1,pass:2,na:3}[b.status]) || priorities[a.priority]-priorities[b.priority]); }
+// HTTP response header checks. Only headers visible on this response are judged; policies set
+// elsewhere (meta tags, other paths, JavaScript cookies) still need manual verification.
+export function securityHeaderChecks(headers, url) {
+  const https=new URL(url).protocol==='https:', h=name=>(headers.get(name)||'').trim(), checks=[];
+  const sec=(id,label,state,detail,priority,fix)=>checks.push([id,label,state==='pass',detail,'Güvenlik',priority,fix,state==='pass'||state==='fail'?undefined:state]);
+  const hsts=h('strict-transport-security'), maxAge=Number(hsts.match(/max-age\s*=\s*"?(\d+)/i)?.[1]||0);
+  sec('hsts','HSTS (Strict-Transport-Security)',!https?'na':maxAge>=15552000?'pass':'fail',!https?'HTTPS olmayan sayfada uygulanamaz.':hsts?'max-age='+maxAge+(maxAge<15552000?'; en az 180 gün (15552000) önerilir.':'.'):'Strict-Transport-Security başlığı bulunamadı.','Yüksek','Strict-Transport-Security: max-age=31536000; includeSubDomains başlığını ekleyin.');
+  const csp=h('content-security-policy'), cspReportOnly=h('content-security-policy-report-only');
+  sec('csp','Content-Security-Policy',csp?'pass':'fail',csp?'CSP başlığı var; politikanın etkinliği elle doğrulanmalıdır.':cspReportOnly?'Yalnız Content-Security-Policy-Report-Only var; politika uygulanmıyor.':'Content-Security-Policy başlığı bulunamadı.','Orta','Kaynakları sınırlayan bir Content-Security-Policy başlığı tanımlayın; önce Report-Only ile deneyin.');
+  const xfo=h('x-frame-options').toUpperCase(), frameAncestors=/(?:^|;)\s*frame-ancestors\s/i.test(csp);
+  sec('framing','Çerçeveleme koruması',frameAncestors||['DENY','SAMEORIGIN'].includes(xfo)?'pass':'fail',frameAncestors?'CSP frame-ancestors tanımlı.':xfo?'X-Frame-Options: '+xfo:'X-Frame-Options veya CSP frame-ancestors bulunamadı.','Orta','CSP frame-ancestors veya X-Frame-Options: DENY/SAMEORIGIN ekleyin.');
+  const nosniff=h('x-content-type-options').toLowerCase();
+  sec('nosniff','X-Content-Type-Options',nosniff==='nosniff'?'pass':'fail',nosniff?'X-Content-Type-Options: '+nosniff:'X-Content-Type-Options başlığı bulunamadı.','Düşük','X-Content-Type-Options: nosniff başlığını ekleyin.');
+  const referrer=h('referrer-policy').toLowerCase(), weakReferrer=/(^|,)\s*(unsafe-url|no-referrer-when-downgrade)\s*$/.test(referrer);
+  sec('referrer','Referrer-Policy',referrer&&!weakReferrer?'pass':'fail',referrer?'Referrer-Policy: '+referrer+(weakReferrer?'; tam adres başka sitelere gidebilir.':''):'Referrer-Policy başlığı bulunamadı; tarayıcı varsayılanı geçerli.','Düşük','Referrer-Policy: strict-origin-when-cross-origin gibi bir değer tanımlayın.');
+  const cookies=typeof headers.getSetCookie==='function'?headers.getSetCookie():[];
+  const flags=cookies.map(c=>{const parts=c.split(';').slice(1).map(p=>p.trim().toLowerCase());return {secure:parts.includes('secure'),httpOnly:parts.includes('httponly'),sameSite:parts.some(p=>p.startsWith('samesite='))};});
+  const insecure=flags.filter(f=>https&&!f.secure).length, noSameSite=flags.filter(f=>!f.sameSite).length, noHttpOnly=flags.filter(f=>!f.httpOnly).length;
+  sec('cookies','Çerez güvenlik bayrakları',!cookies.length?'na':insecure||noSameSite?'fail':'pass',!cookies.length?'Bu yanıtta Set-Cookie yok; JavaScript ile yazılan çerezler doğrulanmadı.':cookies.length+' çerez; Secure eksik: '+insecure+', SameSite eksik: '+noSameSite+', HttpOnly eksik: '+noHttpOnly+'. HttpOnly gerekip gerekmediği çerezin amacına göre elle doğrulanmalıdır.','Orta','Çerezlere Secure ve SameSite ekleyin; oturum çerezlerinde HttpOnly kullanın.');
+  return checks;
+}
 export function analyze(html, url, status=200, headers=new Headers(), {rendered=false}={}) {
   const nodes=[]; function visit(n){if(n.tagName)nodes.push(n);for(const c of n.childNodes||[])visit(c);} visit(parse(html));
   const all=tag=>nodes.filter(n=>n.tagName===tag), attrs=n=>Object.fromEntries((n?.attrs||[]).map(a=>[a.name,a.value]));
@@ -81,7 +102,7 @@ export function analyze(html, url, status=200, headers=new Headers(), {rendered=
   const mounts=nodes.filter(n=>n.tagName==='app-root'||mountIds.has(attrs(n).id));
   const externalScript=all('script').some(n=>attrs(n).src&&(attrs(n).type||'').toLowerCase()!=='application/ld+json');
   const clientRendered=!rendered&&externalScript&&mounts.some(n=>text(n).length<200);
-  const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:({alt:'Orta',internal:'Orta',schema:'Orta',https:'Orta',http:'Orta'}[id]||'Düşük'),fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
+  const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:({alt:'Orta',internal:'Orta',schema:'Orta',https:'Orta',http:'Orta',csp:'Yüksek',cookies:'Orta'}[id]||'Düşük'),fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
   add('title','Sayfa başlığı',!!title,title||'Başlık bulunamadı.','İçerik','Yüksek','Sayfayı açıklayan bir title ekleyin.');
   add('description','Meta açıklama',!!description,description||'Meta açıklama bulunamadı.','İçerik','Orta','Sayfaya özgü meta description ekleyin.');
   const h1Count=headings.filter(x=>x.level===1).length;
@@ -98,6 +119,7 @@ export function analyze(html, url, status=200, headers=new Headers(), {rendered=
   for(const n of schemas)try{JSON.parse(text(n));}catch{invalidSchema=true;}
   add('schema','Yapısal veri JSON biçimi',!invalidSchema,schemas.length+' JSON-LD bloğu; şema uygunluğu ayrıca doğrulanmalıdır.','Teknik','Orta','JSON-LD sözdizimini düzeltin; ilgili şema türünü doğrulayın.',schemas.length?undefined:'na');
   add('https','HTTPS',new URL(url).protocol==='https:',new URL(url).protocol,'Güvenlik','Yüksek','Siteyi HTTPS üzerinden yayınlayın.');
+  securityHeaderChecks(headers,url).forEach(c=>add(...c));
   add('http','Sayfa yanıtı',status===200,'HTTP '+status,'Teknik','Yüksek','Sayfanın beklenen HTTP durum koduyla dönmesini sağlayın.');
   return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length,needsRender:clientRendered&&(!h1Count||!internalLinks.length),appShell:clientRendered&&!h1Count&&!internalLinks.length};
 }
