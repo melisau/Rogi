@@ -1,4 +1,7 @@
 export const uiEnglish={
+"JavaScript ile oluşan içerik doğrulanamadığı için puan verilmedi.":"No score was given because JavaScript-rendered content could not be verified.",
+"JavaScript çalıştırıldı; puan oluşan sayfa içeriğine dayanır.":"JavaScript ran; the score is based on the rendered page.",
+"Puan ilk HTML yanıtına dayanır.":"The score is based on the initial HTML response.",
 "Bağlı sayfaları tara (en fazla 3)":"Scan linked pages (up to 3)",
 "Bağlı sayfa sonuçları":"Linked page results",
 "Ana puan yalnız giriş sayfasına aittir. İlk 20 iç bağlantıdan en fazla 3 aynı adres sayfası incelenir; bu tüm siteyi kapsamaz.":"The main score applies only to the entry page. Up to 3 same-origin pages from the first 20 internal links are reviewed; this does not cover the whole site.",
@@ -42,7 +45,7 @@ export const uiEnglish={
   "Site adresi": "Website URL",
   "Analizi başlat": "Start audit",
   "Taranıyor…": "Scanning…",
-  "Herkese açık bir adres gir. Sayfanın HTML yapısı, temel SEO işaretleri, robots.txt ve sitemap kontrol edilir.": "Enter a public URL. The page’s HTML, basic SEO signals, robots.txt, and sitemap will be checked.",
+  "Herkese açık bir adres gir. JavaScript ile oluşan içerik gerektiğinde tarayıcıda açılır; temel SEO işaretleri, robots.txt ve sitemap kontrol edilir.": "Enter a public URL. JavaScript-rendered content is opened in a browser when needed; basic SEO signals, robots.txt, and sitemap are checked.",
   "Genel puan": "Overall score",
   "Geçen kontrol": "Passed checks",
   "İyileştirme": "Improvements",
@@ -336,12 +339,12 @@ export function localizeReport(report,language='tr'){
    switch(c.id){
     case 'title':en.detail=context.title||'No page title found.';break;
     case 'description':en.detail=context.description||'No meta description found.';break;
-    case 'h1':en.detail=(context.headings?context.headings.filter(h=>h.level===1).length:(tr.detail.match(/^\d+/)?.[0]||'0'))+' H1 heading(s) found.';break;
+    case 'h1':en.detail=c.status==='unknown'?'No H1 in the initial HTML; check the JavaScript-rendered page separately.':(context.headings?context.headings.filter(h=>h.level===1).length:(tr.detail.match(/^\d+/)?.[0]||'0'))+' H1 heading(s) found.';break;
     case 'hierarchy':en.detail='Heading levels inspected.';break;
     case 'canonical':en.detail=tr.detail==='Canonical bulunamadı.'?'No canonical link found.':tr.detail;break;
     case 'index':en.detail=tr.detail.includes('gerçek indeksleme doğrulanmadı')?'No noindex signal found in HTML or HTTP headers; actual indexing is unverified.':tr.detail;break;
     case 'alt':{const missing=tr.detail.match(/;\s*(\d+)/)?.[1]||'0';en.detail=(context.images??tr.detail.match(/^\d+/)?.[0]??'0')+' images; '+missing+' lack an alt attribute. Verify manually whether empty alt text is appropriate.';break;}
-    case 'internal':en.detail=(tr.detail.match(/^\d+/)?.[0]||(context.internalLinks||[]).length)+' internal links found (report list capped at 20).';break;
+    case 'internal':en.detail=c.status==='unknown'?'No internal links in the initial HTML; check the JavaScript-rendered page separately.':(tr.detail.match(/^\d+/)?.[0]||(context.internalLinks||[]).length)+' internal links found (report list capped at 20).';break;
     case 'schema':en.detail=(tr.detail.match(/^\d+/)?.[0]||'0')+' JSON-LD blocks; schema suitability requires separate verification.';break;
     case 'robots':case 'sitemap':en.detail=(tr.detail.match(/^HTTP \d+/)?.[0]?tr.detail.match(/^HTTP \d+/)[0]+'; ':'')+(c.status==='unknown'?'The file could not be verified (network, DNS, timeout, size, or access limitation).':c.status==='pass'?'The file was accessible and its format was recognized.':'The file is missing or its format was not recognized.');break;
    }

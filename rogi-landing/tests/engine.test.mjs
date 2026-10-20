@@ -18,6 +18,17 @@ test('redirects are revalidated and bodies cancelled',async()=>{let calls=0,reso
 test('cross-host and HTTPS downgrade redirects blocked',async()=>{for(const location of ['https://other.com','http://example.com'])await assert.rejects(fetchPage('https://example.com',{resolveHost:async()=>{},fetchImpl:async()=>new Response(null,{status:302,headers:{location}})}));});
 test('host allowlist enforced before network access',async()=>await assert.rejects(fetchPage('https://example.com',{allowedHosts:['other.com'],resolveHost:async()=>{throw Error('must not resolve');}}),/izin listesinde/));
 test('robots timeout is unknown, sitemap 404 fails',async()=>{const r=await scan('https://example.com',{resolveHost:async()=>{},fetchImpl:async url=>{if(url.endsWith('/robots.txt'))throw Error('timeout');if(url.endsWith('/sitemap.xml'))return new Response('missing',{status:404});return new Response(html,{headers:{'content-type':'text/html'}});}});assert.equal(r.checks.find(x=>x.id==='robots').status,'unknown');assert.equal(r.checks.find(x=>x.id==='sitemap').status,'fail');assert.equal(r.failed,r.checks.filter(x=>x.status==='fail').length);});
+test('browser-rendered DOM supplies H1 and internal links for app shells',async()=>{
+ const shell='<title>Portfolio</title><meta name="description" content="Portfolio"><div id="root"></div><script type="module" src="/assets/app.js"></script>';
+ const fetchImpl=async url=>new Response(url.endsWith('/robots.txt')?'User-agent: *':url.endsWith('/sitemap.xml')?'<urlset></urlset>':shell,{headers:{'content-type':url.endsWith('.txt')?'text/plain':'text/html'}});
+ const base={resolveHost:async()=>{},fetchImpl};
+ const raw=await scan('https://example.com/',base);
+ assert.equal(raw.score,null);assert.equal(raw.renderStatus,'unavailable');assert.equal(raw.checks.find(x=>x.id==='h1').status,'unknown');
+ const rendered=await scan('https://example.com/',{...base,renderPage:async()=>({html:shell+'<h1>Portfolio</h1><a href="/projects">Projects</a>'})});
+ assert.equal(rendered.renderStatus,'success');assert.ok(rendered.score>0);assert.equal(rendered.internalLinkCount,1);assert.equal(rendered.checks.find(x=>x.id==='h1').status,'pass');
+ const failed=await scan('https://example.com/',{...base,renderPage:async()=>{throw Error('browser unavailable');}});
+ assert.equal(failed.score,null);assert.equal(failed.renderStatus,'unavailable');
+});
 test('optional linked-page crawl stays on origin, caps at three and reports page findings',async()=>{
  const calls=[],home='<title>Home</title><h1>Home</h1>'+['/a','/b','/c','/d','/a','https://other.com/x','/logout','/search?q=x'].map(href=>'<a href="'+href+'">page</a>').join('');
  const r=await scan('https://example.com/',{checkPages:true,resolveHost:async()=>{},fetchImpl:async url=>{calls.push(url);if(url.endsWith('/robots.txt'))return new Response('User-agent: *');if(url.endsWith('/sitemap.xml'))return new Response('<urlset></urlset>');return new Response(url==='https://example.com/'?home:'<title>Linked</title><h1>Linked</h1>',{headers:{'content-type':'text/html'}});}});
