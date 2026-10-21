@@ -8,6 +8,9 @@ export const projectStore={
  async list(owner){return this.db().query('SELECT '+fields+' FROM rogi_private.projects WHERE owner_id=$1 ORDER BY created_at DESC LIMIT 20',[owner]);},
  async get(owner,id){return (await this.db().query('SELECT '+fields+' FROM rogi_private.projects WHERE owner_id=$1 AND id=$2',[owner,id]))[0];},
  async create(owner,{name,url}){const db=this.db();const results=await db.transaction([db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['rogi-project:'+owner]),db.query('INSERT INTO rogi_private.projects(id,owner_id,name,url) SELECT $1,$2,$3,$4 WHERE (SELECT count(*) FROM rogi_private.projects WHERE owner_id=$2)<20 RETURNING '+fields,[randomUUID(),owner,name,url])]);return results[1][0];},
+ // Reports go with their project through ON DELETE CASCADE.
+ async remove(owner,id){return (await this.db().query('DELETE FROM rogi_private.projects WHERE owner_id=$1 AND id=$2 RETURNING id',[owner,id]))[0];},
+ async removeAll(owner){return (await this.db().query('DELETE FROM rogi_private.projects WHERE owner_id=$1 RETURNING id',[owner])).length;},
  async update(owner,id,{name,url}){return (await this.db().query('UPDATE rogi_private.projects SET name=$3,url=$4,updated_at=now() WHERE owner_id=$1 AND id=$2 RETURNING '+fields,[owner,id,name,url]))[0];}
 };
 export function createProjectsHandler({auth,store=projectStore}={}){
@@ -17,7 +20,7 @@ export function createProjectsHandler({auth,store=projectStore}={}){
   try{
    const url=new URL(request.url),parts=url.pathname.split('/').filter(Boolean),id=parts[2];
    if(parts.length>3||id&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))return reply({error:'not_found'},404);
-   if(!['GET','POST','PATCH'].includes(request.method)||request.method==='POST'&&id||request.method==='PATCH'&&!id)return reply({error:'method_not_allowed'},405);
+   if(!['GET','POST','PATCH','DELETE'].includes(request.method)||request.method==='POST'&&id||request.method==='PATCH'&&!id)return reply({error:'method_not_allowed'},405);
    if(request.method!=='GET'&&request.headers.get('origin')!==url.origin)return reply({error:'origin_rejected'},403);
    const sessionResponse=await auth(new Request(url.origin+'/api/auth/get-session',{headers:{cookie:request.headers.get('cookie')||''},signal:request.signal}),'get-session');
    if(!sessionResponse.ok)return reply({error:'auth_unavailable'},503);
@@ -25,6 +28,13 @@ export function createProjectsHandler({auth,store=projectStore}={}){
    if(!session?.session||typeof session?.user?.id!=='string'||!session.user.id)return reply({error:'sign_in_required'},401);
    const owner=session.user.id;
    if(request.method==='GET'){const data=id?await store.get(owner,id):await store.list(owner);return data?reply(id?{project:data}:{projects:data}):reply({error:'not_found'},404);}
+   if(request.method==='DELETE'){
+    if(id){const removed=await store.remove(owner,id);return removed?reply({deleted:id}):reply({error:'not_found'},404);}
+    // Deleting every project needs an explicit confirmation body, so a stray DELETE cannot wipe an account.
+    let body;try{body=JSON.parse(await readLimited(request,4096));}catch{return reply({error:'invalid_request'},400);}
+    if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==1||body.confirm!=='delete-all')return reply({error:'confirmation_required'},400);
+    return reply({deletedProjects:await store.removeAll(owner)});
+   }
    if(!/^application\/json(?:;|$)/i.test(request.headers.get('content-type')||''))return reply({error:'json_required'},415);
    let data;try{data=JSON.parse(await readLimited(request,4096));}catch{return reply({error:'invalid_request'},400);}
    if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).some(k=>!['name','url'].includes(k))||typeof data.name!=='string'||!data.name.trim()||data.name.trim().length>100||typeof data.url!=='string'||data.url.length>2048)return reply({error:'invalid_project'},400);

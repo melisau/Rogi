@@ -67,7 +67,28 @@ export function summarize(checks) {
   return {passed,failed,total:checks.length,unknown:checks.filter(x=>x.status==='unknown').length,notApplicable:checks.filter(x=>x.status==='na').length,score:passed+failed?Math.round(passed/(passed+failed)*100):null};
 }
 export function sortChecks(checks) { return [...checks].sort((a,b)=>({fail:0,unknown:1,pass:2,na:3}[a.status]-{fail:0,unknown:1,pass:2,na:3}[b.status]) || priorities[a.priority]-priorities[b.priority]); }
-export function analyze(html, url, status=200, headers=new Headers()) {
+// HTTP response header checks. Only headers visible on this response are judged; policies set
+// elsewhere (meta tags, other paths, JavaScript cookies) still need manual verification.
+export function securityHeaderChecks(headers, url) {
+  const https=new URL(url).protocol==='https:', h=name=>(headers.get(name)||'').trim(), checks=[];
+  const sec=(id,label,state,detail,priority,fix)=>checks.push([id,label,state==='pass',detail,'Güvenlik',priority,fix,state==='pass'||state==='fail'?undefined:state]);
+  const hsts=h('strict-transport-security'), maxAge=Number(hsts.match(/max-age\s*=\s*"?(\d+)/i)?.[1]||0);
+  sec('hsts','HSTS (Strict-Transport-Security)',!https?'na':maxAge>=15552000?'pass':'fail',!https?'HTTPS olmayan sayfada uygulanamaz.':hsts?'max-age='+maxAge+(maxAge<15552000?'; en az 180 gün (15552000) önerilir.':'.'):'Strict-Transport-Security başlığı bulunamadı.','Yüksek','Strict-Transport-Security: max-age=31536000; includeSubDomains başlığını ekleyin.');
+  const csp=h('content-security-policy'), cspReportOnly=h('content-security-policy-report-only');
+  sec('csp','Content-Security-Policy',csp?'pass':'fail',csp?'CSP başlığı var; politikanın etkinliği elle doğrulanmalıdır.':cspReportOnly?'Yalnız Content-Security-Policy-Report-Only var; politika uygulanmıyor.':'Content-Security-Policy başlığı bulunamadı.','Orta','Kaynakları sınırlayan bir Content-Security-Policy başlığı tanımlayın; önce Report-Only ile deneyin.');
+  const xfo=h('x-frame-options').toUpperCase(), frameAncestors=/(?:^|;)\s*frame-ancestors\s/i.test(csp);
+  sec('framing','Çerçeveleme koruması',frameAncestors||['DENY','SAMEORIGIN'].includes(xfo)?'pass':'fail',frameAncestors?'CSP frame-ancestors tanımlı.':xfo?'X-Frame-Options: '+xfo:'X-Frame-Options veya CSP frame-ancestors bulunamadı.','Orta','CSP frame-ancestors veya X-Frame-Options: DENY/SAMEORIGIN ekleyin.');
+  const nosniff=h('x-content-type-options').toLowerCase();
+  sec('nosniff','X-Content-Type-Options',nosniff==='nosniff'?'pass':'fail',nosniff?'X-Content-Type-Options: '+nosniff:'X-Content-Type-Options başlığı bulunamadı.','Düşük','X-Content-Type-Options: nosniff başlığını ekleyin.');
+  const referrer=h('referrer-policy').toLowerCase(), weakReferrer=/(^|,)\s*(unsafe-url|no-referrer-when-downgrade)\s*$/.test(referrer);
+  sec('referrer','Referrer-Policy',referrer&&!weakReferrer?'pass':'fail',referrer?'Referrer-Policy: '+referrer+(weakReferrer?'; tam adres başka sitelere gidebilir.':''):'Referrer-Policy başlığı bulunamadı; tarayıcı varsayılanı geçerli.','Düşük','Referrer-Policy: strict-origin-when-cross-origin gibi bir değer tanımlayın.');
+  const cookies=typeof headers.getSetCookie==='function'?headers.getSetCookie():[];
+  const flags=cookies.map(c=>{const parts=c.split(';').slice(1).map(p=>p.trim().toLowerCase());return {secure:parts.includes('secure'),httpOnly:parts.includes('httponly'),sameSite:parts.some(p=>p.startsWith('samesite='))};});
+  const insecure=flags.filter(f=>https&&!f.secure).length, noSameSite=flags.filter(f=>!f.sameSite).length, noHttpOnly=flags.filter(f=>!f.httpOnly).length;
+  sec('cookies','Çerez güvenlik bayrakları',!cookies.length?'na':insecure||noSameSite?'fail':'pass',!cookies.length?'Bu yanıtta Set-Cookie yok; JavaScript ile yazılan çerezler doğrulanmadı.':cookies.length+' çerez; Secure eksik: '+insecure+', SameSite eksik: '+noSameSite+', HttpOnly eksik: '+noHttpOnly+'. HttpOnly gerekip gerekmediği çerezin amacına göre elle doğrulanmalıdır.','Orta','Çerezlere Secure ve SameSite ekleyin; oturum çerezlerinde HttpOnly kullanın.');
+  return checks;
+}
+export function analyze(html, url, status=200, headers=new Headers(), {rendered=false}={}) {
   const nodes=[]; function visit(n){if(n.tagName)nodes.push(n);for(const c of n.childNodes||[])visit(c);} visit(parse(html));
   const all=tag=>nodes.filter(n=>n.tagName===tag), attrs=n=>Object.fromEntries((n?.attrs||[]).map(a=>[a.name,a.value]));
   const text=n=>(n?.nodeName==='#text'?n.value:(n?.childNodes||[]).map(text).join('')).trim();
@@ -75,8 +96,13 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   const title=text(all('title')[0]), description=meta('description'), robots=meta('robots')+', '+meta('googlebot')+', '+(headers.get('x-robots-tag')||'');
   const canonicals=all('link').filter(n=>(attrs(n).rel||'').toLowerCase().split(/\s+/).includes('canonical'));
   const canonical=attrs(canonicals[0]).href||'', headings=nodes.filter(n=>/^h[1-6]$/.test(n.tagName)).map(n=>({level:Number(n.tagName[1]),text:text(n)})), images=all('img'), checks=[];
-  const clientRendered=all('script').some(n=>attrs(n).src&&(attrs(n).type||'').toLowerCase()==='module')&&nodes.some(n=>['root','app','__next'].includes(attrs(n).id));
-  const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:({alt:'Orta',internal:'Orta',schema:'Orta',https:'Orta',http:'Orta'}[id]||'Düşük'),fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
+  // A client-rendered shell has an external script plus a framework mount point that holds almost no text.
+  // Rendered DOM is never treated as a shell again, so missing H1/links there are ordinary failures.
+  const mountIds=new Set(['root','app','__next','__nuxt','___gatsby','svelte','q-app']);
+  const mounts=nodes.filter(n=>n.tagName==='app-root'||mountIds.has(attrs(n).id));
+  const externalScript=all('script').some(n=>attrs(n).src&&(attrs(n).type||'').toLowerCase()!=='application/ld+json');
+  const clientRendered=!rendered&&externalScript&&mounts.some(n=>text(n).length<200);
+  const add=(id,label,check,detail,category,priority='Orta',fix='',state)=>checks.push({id,label,status:state||(check?'pass':'fail'),detail,category,priority,effort:({alt:'Orta',internal:'Orta',schema:'Orta',https:'Orta',http:'Orta',csp:'Yüksek',cookies:'Orta',mixed:'Orta'}[id]||'Düşük'),fix,verify:'Değişikliği yayınlayıp aynı adresi yeniden tarayın.',evidence:{url,detail}});
   add('title','Sayfa başlığı',!!title,title||'Başlık bulunamadı.','İçerik','Yüksek','Sayfayı açıklayan bir title ekleyin.');
   add('description','Meta açıklama',!!description,description||'Meta açıklama bulunamadı.','İçerik','Orta','Sayfaya özgü meta description ekleyin.');
   const h1Count=headings.filter(x=>x.level===1).length;
@@ -93,8 +119,30 @@ export function analyze(html, url, status=200, headers=new Headers()) {
   for(const n of schemas)try{JSON.parse(text(n));}catch{invalidSchema=true;}
   add('schema','Yapısal veri JSON biçimi',!invalidSchema,schemas.length+' JSON-LD bloğu; şema uygunluğu ayrıca doğrulanmalıdır.','Teknik','Orta','JSON-LD sözdizimini düzeltin; ilgili şema türünü doğrulayın.',schemas.length?undefined:'na');
   add('https','HTTPS',new URL(url).protocol==='https:',new URL(url).protocol,'Güvenlik','Yüksek','Siteyi HTTPS üzerinden yayınlayın.');
+  securityHeaderChecks(headers,url).forEach(c=>add(...c));
+  // Mobile, language and sharing signals visible in the HTML.
+  const viewport=(attrs(all('meta').find(n=>(attrs(n).name||'').toLowerCase()==='viewport')).content||'').toLowerCase();
+  const zoomLocked=/user-scalable\s*=\s*(no|0)\b/.test(viewport)||/maximum-scale\s*=\s*1(\.0*)?\b/.test(viewport);
+  add('viewport','Mobil viewport',/width\s*=\s*device-width/.test(viewport)&&!zoomLocked,!viewport?'Viewport meta etiketi bulunamadı.':zoomLocked?viewport+'; yakınlaştırma engellenmiş.':viewport,'Mobil','Yüksek','<meta name="viewport" content="width=device-width, initial-scale=1"> kullanın; yakınlaştırmayı engellemeyin.');
+  const lang=(attrs(all('html')[0]).lang||'').trim();
+  add('lang','Sayfa dili (html lang)',/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(lang),lang?'lang="'+lang+'"':'html etiketinde lang niteliği bulunamadı.','İçerik','Orta','<html lang="tr"> gibi sayfanın dilini belirtin.');
+  const alternates=all('link').filter(n=>(attrs(n).rel||'').toLowerCase().split(/\s+/).includes('alternate')&&attrs(n).hreflang);
+  let hreflangValid=true,selfReferenced=false;
+  for(const n of alternates){try{const target=new URL(attrs(n).href||'',url);if(!attrs(n).href||!['http:','https:'].includes(target.protocol))hreflangValid=false;target.hash='';if(target.href===new URL(url).href)selfReferenced=true;}catch{hreflangValid=false;}}
+  add('hreflang','Hreflang alternatifleri',hreflangValid&&selfReferenced,!alternates.length?'Hreflang bağlantısı yok.':alternates.length+' hreflang bağlantısı; '+(!hreflangValid?'geçersiz adres var.':selfReferenced?'sayfa kendi dilini de listeliyor.':'sayfanın kendi adresi listede yok.'),'Teknik','Düşük','Her dil sürümünü ve sayfanın kendisini mutlak adreslerle hreflang listesine ekleyin.',alternates.length?undefined:'na');
+  const property=name=>all('meta').filter(n=>(attrs(n).property||attrs(n).name||'').toLowerCase()===name).map(n=>attrs(n).content||'').find(Boolean)||'';
+  const missingOg=['og:title','og:description','og:image'].filter(p=>!property(p));
+  add('social','Sosyal paylaşım metaverisi',!missingOg.length,missingOg.length?'Eksik: '+missingOg.join(', ')+'.':'og:title, og:description ve og:image var'+(property('twitter:card')?'; twitter:card: '+property('twitter:card')+'.':'.'),'İçerik','Düşük','og:title, og:description ve og:image etiketlerini ekleyin.');
+  const insecureRefs=new URL(url).protocol!=='https:'?[]:nodes.flatMap(n=>{const a=attrs(n),rel=(a.rel||'').toLowerCase().split(/\s+/);const refs=['img','script','iframe','audio','video','source','embed','track'].includes(n.tagName)?[a.src]:n.tagName==='link'&&rel.some(r=>['stylesheet','icon','preload','modulepreload','manifest'].includes(r))?[a.href]:n.tagName==='form'?[a.action]:n.tagName==='object'?[a.data]:[];return refs.filter(v=>v&&/^\s*http:\/\//i.test(v));});
+  add('mixed','Karışık içerik',!insecureRefs.length,new URL(url).protocol!=='https:'?'HTTPS olmayan sayfada uygulanamaz.':insecureRefs.length?insecureRefs.length+' kaynak HTTP ile yükleniyor: '+[...new Set(insecureRefs)].slice(0,3).join(', '):'HTML içinde HTTP ile yüklenen kaynak bulunamadı.','Güvenlik','Yüksek','Görsel, script, stil ve form adreslerini HTTPS yapın.',new URL(url).protocol!=='https:'?'na':undefined);
   add('http','Sayfa yanıtı',status===200,'HTTP '+status,'Teknik','Yüksek','Sayfanın beklenen HTTP durum koduyla dönmesini sağlayın.');
-  return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length,appShell:clientRendered&&(!h1Count||!internalLinks.length)};
+  return {checks,title,description,headings,internalLinks:internalLinks.slice(0,20),internalLinkCount:internalLinks.length,images:images.length,needsRender:clientRendered&&(!h1Count||!internalLinks.length),appShell:clientRendered&&!h1Count&&!internalLinks.length};
+}
+// Returns the rendered analysis only when JavaScript produced verifiable content (an H1 or an internal link).
+async function renderAnalysis(page, settings) {
+  const rendered=await settings.renderPage(page,settings);
+  const next=analyze(rendered.html,page.url,page.status,page.headers,{rendered:true});
+  return next.headings.some(h=>h.level===1)||next.internalLinkCount?next:null;
 }
 export async function crawlLinkedPages(links, homeUrl, settings={}) {
   const origin=new URL(homeUrl).origin, selected=[], seen=new Set([homeUrl]);
@@ -113,8 +161,8 @@ export async function crawlLinkedPages(links, homeUrl, settings={}) {
       if(page.status!==200)return {url:page.url,status:page.status===404||page.status===410?'fail':'unknown',httpStatus:page.status,reason:'http_status'};
       if(!/text\/html|application\/xhtml\+xml/i.test(page.type))return {url:page.url,status:'na',httpStatus:page.status,reason:'not_html'};
       let result=analyze(page.body,page.url,page.status,page.headers);
-      if(result.appShell&&settings.renderPage){
-        try {const rendered=await settings.renderPage(page,settings);result=analyze(rendered.html,page.url,page.status,page.headers);} catch(error) {if(settings.signal?.aborted)throw error;}
+      if(result.needsRender&&settings.renderPage){
+        try {const next=await renderAnalysis(page,settings);if(next)result=next;} catch(error) {if(settings.signal?.aborted)throw error;}
       }
       const summary=summarize(result.checks);
       return {url:page.url,status:result.appShell?'unknown':'pass',httpStatus:page.status,title:result.title,description:result.description,score:result.appShell?null:summary.score,passed:summary.passed,failed:summary.failed,checks:result.checks.filter(x=>x.status==='fail'||x.status==='unknown').map(x=>({id:x.id,label:x.label,detail:x.detail,priority:x.priority,fix:x.fix,status:x.status}))};
@@ -123,8 +171,8 @@ export async function crawlLinkedPages(links, homeUrl, settings={}) {
       return {url,status:'unknown',httpStatus:null,reason:'unavailable'};
     }
   }
-  const concurrency=settings.renderPage?1:2;
-  for(let index=0;index<targets.length;index+=concurrency)results.push(...await Promise.all(targets.slice(index,index+concurrency).map(inspect)));
+  // Renderers serialize their own browser work, so plain HTML pages keep two concurrent fetches.
+  for(let index=0;index<targets.length;index+=2)results.push(...await Promise.all(targets.slice(index,index+2).map(inspect)));
   return {limit:3,discovered:selected.length,omitted:Math.max(0,selected.length-targets.length),results};
 }
 export async function scan(input, options={}) {
@@ -132,13 +180,12 @@ export async function scan(input, options={}) {
   if(!/text\/html|application\/xhtml\+xml/i.test(home.type)) throw new AuditError('Adres HTML sayfası döndürmedi.',422,'not_html');
   if(home.status===429||home.status>=500) throw new AuditError('Hedef site geçici olarak taranamadı.',502,'target_unavailable');
   let analysis=analyze(home.body,home.url,home.status,home.headers), origin=new URL(home.url).origin;
-  let renderStatus=analysis.appShell?'unavailable':'not_needed';
-  let renderDetail='';
-  if(analysis.appShell&&options.renderPage) {
+  let renderStatus=analysis.needsRender?'unavailable':'not_needed';
+  let renderDetail=analysis.needsRender&&!options.renderPage?'Bu ortamda tarayıcı ile JavaScript içeriği oluşturulamıyor; ilk HTML yanıtı gösteriliyor.':'';
+  if(analysis.needsRender&&options.renderPage) {
     try {
-      const rendered=await options.renderPage(home,settings);
-      const next=analyze(rendered.html,home.url,home.status,home.headers);
-      if(next.appShell)renderDetail='Tarayıcı açıldı ancak H1 veya iç bağlantılar oluşmadı; sonuç doğrulanamadı.';
+      const next=await renderAnalysis(home,settings);
+      if(!next)renderDetail='Tarayıcı açıldı ancak H1 veya iç bağlantılar oluşmadı; sonuç doğrulanamadı.';
       else {analysis=next;renderStatus='success';}
     } catch(error) {
       if(signal.aborted)throw error;

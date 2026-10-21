@@ -1,7 +1,7 @@
 # Rogi görev listesi
 
-Son güncelleme: 15 Ekim 2026. [x] kanıtla doğrulanan iş, [ ] kalan iş.
-Kod: codex/rogi-backlog; inceleme: https://github.com/melisau/Rogi/pull/1.
+Son güncelleme: 20 Ekim 2026. [x] kanıtla doğrulanan iş, [ ] kalan iş.
+Son iş: claude/rogi-render-hardening dalı (render sertleştirme, güvenlik/mobil kontroller, silme ve hesap kurtarma).
 Kişisel/ticari olmayan Hobby yayını: https://rogi-audit.vercel.app (Vercel Authentication korumalı).
 Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun özetidir.
 
@@ -19,6 +19,10 @@ Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun öz
 - [x] GitHub Actions test/build; son yayınlanan UI kontrolleri başarılı.
 - [x] Gerçek veritabanında build sırasında kota ve rapor saklama/izolasyon kontrolü.
 - [x] Ücretsiz kişisel Vercel Hobby yayını ve gerçek site taraması doğrulandı.
+- [x] JS ile oluşan sayfalar için headless Chromium render (PR #5); yalnız aynı origin GET istekleri doğrulanmış transport'tan geçer.
+- [x] Render ağ sertleştirmesi: hostname'ler ~NOTFOUND, kapalı proxy, WebRTC UDP engeli. Gerçek Chromium'da eski bayraklarla 6/6 kaçış yerel test sunucusuna ulaştı, yenilerle 0/6.
+- [x] Tarama başına tek tarayıcı, sıralı render, iptalde anında kapanma; ROGI_RENDER=off anahtarı.
+- [ ] Render'ı sır içermeyen ayrı servise taşımak (sandbox'sız Chromium şu an DB/auth sırlarıyla aynı fonksiyonda). Herkese açık yayından önce zorunlu.
 
 ## P1 — Ana ürün
 - [x] Öncelik, durum ve tahmini efor sırası.
@@ -40,8 +44,10 @@ Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun öz
 - [x] Kullanıcı erişim kontrolü: iki gerçek hesapta proje okuma/değiştirme ve rapor okuma/listeleme izolasyonu; anonim istek 401.
 - [x] 20 proje ve 20 rapor sınırları transaction kilitleriyle korunur.
 - [x] TR/EN proje oluşturma/düzenleme ve bulut rapor UI QA.
-- [ ] E-posta doğrulama ve şifre sıfırlama akışları.
-- [ ] Proje silme/geri alma ve hesap silmede ilişkili verilerin temizlenmesi.
+- [x] Şifre sıfırlama, şifre değiştirme ve doğrulama e-postasını yeniden gönderme; e-posta dönüş adresi yalnız bu sitenin /account sayfası. Sahte API ile tarayıcıda doğrulandı.
+- [ ] Hesap kurtarma akışlarının gerçek Neon Auth ile canlı doğrulaması (e-posta gönderimi, hata kodları).
+- [x] Proje, rapor ve tüm bulut verisini silme (onaylı arayüz, sahiplik ve origin kontrollü API).
+- [ ] Silmeyi geri alma ve Neon Auth hesabının kendisinin silinmesi.
 - [ ] Kalıcı arka plan taraması, ilerleme, iptal ve yeniden deneme. Mevcut tarama istek süresince çalışır; kuyruk değildir.
 - [x] İçerik/IP/URL kaydetmeyen yapılandırılmış tarama süre/sonuç logları.
 - [ ] Kalıcı ölçüm geçmişi, eşik alarmları ve kullanım paneli.
@@ -50,6 +56,9 @@ Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun öz
 ## P3 — Kalite ve tarama kapsamı
 - [x] İsteğe bağlı kontrollü çok sayfalı tarama: giriş sayfasındaki ilk 20 bağlantıdan en fazla 3 aynı-origin HTML sayfası, iki eşzamanlı istek; sayfa başına ayrı puan ve bulgular. Ana puan yalnız giriş sayfasına aittir.
 - [x] İsteğe bağlı bozuk iç bağlantı kontrolü ve URL/HTTP/durum kanıt listesi. İlk 20 adaydan en fazla 10 aynı-origin bağlantı; iki eşzamanlı istek. IANA üzerinde yerel tarayıcı ve canlı API aynı sonucu verdi: 8 geçti, 2 doğrulanamadı; HTTP 200.
+- [x] Canlı taramada güvenlik başlıkları: HSTS, CSP, çerçeveleme, nosniff, Referrer-Policy, çerez bayrakları.
+- [x] Canlı taramada mobil viewport, html lang, hreflang, Open Graph ve karışık içerik.
+- [x] JS kabuk algılaması CRA, Angular, Nuxt, Gatsby'yi kapsar; H1'i olan tek sayfalık uygulamalar puan alır.
 - [ ] PageSpeed/Core Web Vitals ölçümü.
 - [ ] Kapsamlı erişilebilirlik ve gerçek ekran okuyucu doğrulaması. Skip link, odak, seçili durum ve temel klavye akışları geçti.
 - [x] Masaüstü ve 390px mobil rapor/proje ekranı QA; son mobil dil düğmesi sıkışması düzeltildi.
@@ -58,7 +67,7 @@ Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun öz
 - [ ] Yerel Git eşitleme: asıl Windows klasörüne yazma hâlâ başarısız. İzole çalışma kopyası test edilip GitHub'a kaydediliyor.
 
 ## Kanıt ve sınırlar
-- Son tam UI yayını: 68 test + build ve gerçek Postgres kontrolleri geçti. Bağlantı motoru ve UI ile 71 test geçti; canlı API ve yerel gerçek tarayıcı kontrolü tamamlandı. Çok sayfalı tarama yerel önizlemede IANA ile ve 73 test + build ile doğrulandı; henüz yayına alınmadı.
+- Son tam UI yayını: 68 test + build ve gerçek Postgres kontrolleri geçti. Bağlantı motoru ve UI ile 71 test geçti; canlı API ve yerel gerçek tarayıcı kontrolü tamamlandı. Çok sayfalı tarama ve JS render main'e birleşti (PR #2–#5).
 - QA gerçek hesap bilgileri .env önekli yerel dosyalarda; GitHub'a veya yayına gönderilmez.
 - UI oluştur/düzenle/kaydet/listele/aç ve TR/EN akışları QA fixturelarıyla; API kalıcılık/izolasyonu gerçek Neon ile ayrı doğrulandı.
 - Normal tarama ve kontrol listesi notları yereldir. Yalnız açık bulut eylemi sunucu raporu kaydeder.

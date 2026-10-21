@@ -20,3 +20,13 @@ test('report reads require sign-in and owner scoped store access',async()=>{
  const signedOut=createReportsHandler({auth:async()=>Response.json(null)});assert.equal((await signedOut(request())).status,401);
  const handler=createReportsHandler({auth,projects:{get:async()=>({})},store:{list:async(owner,id)=>{assert.equal(owner,'user-a');assert.equal(id,project);return [];}}});assert.deepEqual(await (await handler(request())).json(),{reports:[]});
 });
+test('report deletion is owner-scoped and origin-checked',async()=>{
+ const report='33333333-3333-4333-8333-333333333333',calls=[];
+ const handler=createReportsHandler({auth,projects:{get:async(owner,key)=>owner==='user-a'&&key===project?{id:project}:undefined},scan:()=>{throw Error('must not scan');},store:{remove:async(owner,key,rid)=>{calls.push([owner,key,rid]);return rid===report?{id:rid}:undefined;}}});
+ const del=(path,origin='https://rogi.test')=>new Request('https://rogi.test/api/projects/'+project+'/reports'+path,{method:'DELETE',headers:{origin}});
+ assert.equal((await handler(del('/'+report))).status,200);
+ assert.equal((await handler(del('/44444444-4444-4444-8444-444444444444'))).status,404);
+ assert.equal((await handler(del(''))).status,405);
+ assert.equal((await handler(del('/'+report,'https://evil.test'))).status,403);
+ assert.deepEqual(calls,[['user-a',project,report],['user-a',project,'44444444-4444-4444-8444-444444444444']]);
+});

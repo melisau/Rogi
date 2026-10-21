@@ -1,6 +1,8 @@
 import {handleAuthProxyRequest,resolveNeonAuthLogging} from '@neondatabase/auth/server';
 import {readLimited} from '../worker/engine.js';
-const routes=new Map([['get-session','GET'],['sign-in/email','POST'],['sign-up/email','POST'],['sign-out','POST']]);
+const routes=new Map([['get-session','GET'],['sign-in/email','POST'],['sign-up/email','POST'],['sign-out','POST'],['request-password-reset','POST'],['reset-password','POST'],['change-password','POST'],['send-verification-email','POST']]);
+// Links the auth service puts in emails may only return to this site's account page (no open redirects).
+const returnFields={'request-password-reset':'redirectTo','send-verification-email':'callbackURL'};
 const reply=(code,status)=>Response.json({error:code},{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
 export function createAuthHandler({proxy=handleAuthProxyRequest,config=()=>({baseUrl:process.env.NEON_AUTH_BASE_URL,cookieSecret:process.env.NEON_AUTH_COOKIE_SECRET})}={}){
  return async(request,path)=>{
@@ -11,7 +13,8 @@ export function createAuthHandler({proxy=handleAuthProxyRequest,config=()=>({bas
   if(request.method==='POST'){
    if(request.headers.get('origin')!==origin)return reply('origin_required',403);
    if(!/^application\/json(?:;|$)/i.test(request.headers.get('content-type')||''))return reply('json_required',415);
-   try{const raw=await readLimited(request,4096);const data=JSON.parse(raw);if(!data||typeof data!=='object'||Array.isArray(data))return reply('invalid_request',400);request=new Request(request.url,{method:'POST',headers:request.headers,body:raw,signal:request.signal});}catch{return reply('invalid_request',400);}
+   try{const raw=await readLimited(request,4096);const data=JSON.parse(raw);if(!data||typeof data!=='object'||Array.isArray(data))return reply('invalid_request',400);
+   const field=returnFields[path];if(field&&data[field]!==origin+'/account')return reply('invalid_redirect',400);request=new Request(request.url,{method:'POST',headers:request.headers,body:raw,signal:request.signal});}catch{return reply('invalid_request',400);}
   }
   try{
    const options=config();if(!options.baseUrl||!options.cookieSecret||options.cookieSecret.length<32)return reply('auth_unavailable',503);
