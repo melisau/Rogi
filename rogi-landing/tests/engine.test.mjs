@@ -37,17 +37,17 @@ test('shell detection covers non-module bundles and framework mounts but not ser
  const r=analyze(ssr,'https://example.com/');assert.equal(r.needsRender,false);assert.equal(r.appShell,false);assert.equal(r.checks.find(x=>x.id==='h1').status,'pass');
  const noScript=analyze('<title>T</title><div id="root"></div>','https://example.com/');assert.equal(noScript.needsRender,false);assert.equal(noScript.checks.find(x=>x.id==='h1').status,'fail');
 });
-test('a single-page app with an H1 but no internal links keeps a score',async()=>{
+test('a single-page app is scored only after it renders',async()=>{
  const page='<title>One page</title><meta name="description" content="One page"><div id="root"><h1>One page</h1></div><script type="module" src="/assets/app.js"></script>';
  const fetchImpl=async url=>new Response(url.endsWith('/robots.txt')?'User-agent: *':url.endsWith('/sitemap.xml')?'<urlset></urlset>':page,{headers:{'content-type':url.endsWith('.txt')?'text/plain':'text/html'}});
  const base={resolveHost:async()=>{},fetchImpl};
  const raw=await scan('https://example.com/',base);
- assert.equal(typeof raw.score,'number');assert.equal(raw.scoreReason,undefined);assert.equal(raw.renderStatus,'unavailable');assert.ok(raw.renderDetail);
+ assert.equal(raw.score,null);assert.equal(raw.scoreReason,'client_rendered_content');assert.equal(raw.renderStatus,'unavailable');assert.ok(raw.renderDetail);
  assert.equal(raw.checks.find(x=>x.id==='internal').status,'unknown');
  const rendered=await scan('https://example.com/',{...base,renderPage:async()=>({html:page})});
  assert.equal(rendered.renderStatus,'success');assert.equal(typeof rendered.score,'number');assert.equal(rendered.checks.find(x=>x.id==='internal').status,'fail');assert.equal(rendered.checks.find(x=>x.id==='h1').status,'pass');
  const empty=await scan('https://example.com/',{...base,renderPage:async()=>({html:'<div id="root"></div>'})});
- assert.equal(empty.renderStatus,'unavailable');assert.equal(typeof empty.score,'number');assert.match(empty.renderDetail,/H1 veya iç bağlantılar oluşmadı/);
+ assert.equal(empty.renderStatus,'unavailable');assert.equal(empty.score,null);assert.match(empty.renderDetail,/H1 veya iç bağlantılar oluşmadı/);
 });
 test('optional linked-page crawl stays on origin, caps at three and reports page findings',async()=>{
  const calls=[],home='<title>Home</title><h1>Home</h1>'+['/a','/b','/c','/d','/a','https://other.com/x','/logout','/search?q=x'].map(href=>'<a href="'+href+'">page</a>').join('');

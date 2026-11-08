@@ -4,18 +4,26 @@ import { projectBundle } from './project-bundle.js';
 import audit from './audit.js';
 import {page} from './page.js';
 import {renderLanding,sitemap} from './landing-seo.js';
+import {ogImage} from './og-image.js';
+import {legalPage,notFoundPage,favicon} from './legal.js';
 const security={'x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin','x-frame-options':'DENY'};
+// Pages still use inline scripts and styles, so 'unsafe-inline' is needed until they move to files.
+export const csp="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
 export default {async fetch(request,env={}){
  const url=new URL(request.url);
  if(url.pathname==='/assets/project.js')return new Response(projectBundle,{headers:{...security,'content-type':'text/javascript; charset=utf-8','cache-control':'no-cache'}});
  if(url.pathname==='/api/scan')return env.handleScan?env.handleScan(request,env):audit.fetch(request,env);
- const htmlHeaders={...security,'content-type':'text/html; charset=utf-8','cache-control':'no-cache'};
+ const htmlHeaders={...security,'content-security-policy':csp,'content-type':'text/html; charset=utf-8','cache-control':'no-cache'};
  if(url.pathname==='/')return new Response(null,{status:308,headers:{...security,location:'/tr'}});
  if(['/tr','/en'].includes(url.pathname))return new Response(renderLanding(url.origin,url.pathname.slice(1)),{headers:htmlHeaders});
  if(url.pathname==='/projects')return new Response(projectsPage,{headers:{...htmlHeaders,'cache-control':'no-store'}});
  if(url.pathname==='/account')return new Response(account,{headers:{...htmlHeaders,'cache-control':'no-store'}});
  if(url.pathname==='/app'||url.pathname==='/app/')return new Response(page,{headers:htmlHeaders});
+ if(url.pathname==='/favicon.svg'||url.pathname==='/favicon.ico')return new Response(favicon,{headers:{...security,'content-type':'image/svg+xml','cache-control':'public, max-age=86400'}});
+ if(url.pathname==='/og.png')return new Response(ogImage,{headers:{...security,'content-type':'image/png','cache-control':'public, max-age=86400'}});
+ const legal=legalPage(url.pathname,url.origin);
+ if(legal)return new Response(legal.html,{status:legal.status,headers:htmlHeaders});
  if(url.pathname==='/robots.txt')return new Response('User-agent: *\nAllow: /\nDisallow: /app\nSitemap: '+url.origin+'/sitemap.xml',{headers:{...security,'content-type':'text/plain'}});
  if(url.pathname==='/sitemap.xml')return new Response(sitemap(url.origin),{headers:{...security,'content-type':'application/xml'}});
- return new Response('Sayfa bulunamadı.',{status:404,headers:security});
+ return new Response(notFoundPage(url.pathname),{status:404,headers:{...htmlHeaders,'cache-control':'no-store'}});
 }};
