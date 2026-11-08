@@ -18,10 +18,10 @@ export function renderLanding(origin,language='tr'){
  const tags='<link rel="canonical" href="'+escape(canonical)+'">'+
   ['tr','en','x-default'].map(code=>'<link rel="alternate" hreflang="'+code+'" href="'+escape(origin+'/'+(code==='x-default'?'tr':code))+'">').join('')+
   [['og:type','website'],['og:site_name','Rogi'],['og:title',copy.title],['og:description',copy.description],['og:url',canonical],['og:locale',copy.locale],['og:locale:alternate',lang==='en'?'tr_TR':'en_GB']].map(([property,content])=>'<meta property="'+property+'" content="'+escape(content)+'">').join('')+
-  '<meta name="twitter:card" content="summary"><meta name="twitter:title" content="'+escape(copy.title)+'"><meta name="twitter:description" content="'+escape(copy.description)+'">'+
+  '<meta property="og:image" content="'+escape(origin+'/og.png')+'"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Rogi"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="'+escape(origin+'/og.png')+'"><meta name="twitter:title" content="'+escape(copy.title)+'"><meta name="twitter:description" content="'+escape(copy.description)+'">'+
   '<script type="application/ld+json">'+JSON.stringify({'@context':'https://schema.org','@type':'WebSite','@id':origin+'/#website',name:'Rogi',url:origin+'/tr',inLanguage:['tr','en']}).replace(/</g,'\\u003c')+'</script>';
  return serialize(document).replace('</head>',tags+'</head>');
 }
 export function sitemap(origin){
- return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'+['tr','en'].map(lang=>'<url><loc>'+escape(origin+'/'+lang)+'</loc>'+['tr','en','x-default'].map(code=>'<xhtml:link rel="alternate" hreflang="'+code+'" href="'+escape(origin+'/'+(code==='x-default'?'tr':code))+'"/>').join('')+'</url>').join('')+'</urlset>';
+ return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'+['tr','en'].map(lang=>'<url><loc>'+escape(origin+'/'+lang)+'</loc>'+['tr','en','x-default'].map(code=>'<xhtml:link rel="alternate" hreflang="'+code+'" href="'+escape(origin+'/'+(code==='x-default'?'tr':code))+'"/>').join('')+'</url>').join('')+['/gizlilik','/privacy','/kosullar','/terms','/bot'].map(path=>'<url><loc>'+escape(origin+path)+'</loc></url>').join('')+'</urlset>';
 }

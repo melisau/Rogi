@@ -17,6 +17,9 @@ export default {async fetch(request){
   if(url.pathname==='/api/index'&&route!==null)url.pathname='/'+route;
   url.searchParams.delete('rogi_route');
   if(url.pathname==='/api/health')return handleHealth(request);
+  // ROGI_ACCOUNTS=off turns off sign-up, sign-in and cloud projects; anonymous scanning keeps working.
+  const accountsOff=process.env.ROGI_ACCOUNTS==='off';
+  if(accountsOff&&(url.pathname.startsWith('/api/auth/')||url.pathname==='/api/projects'||url.pathname.startsWith('/api/projects/')))return Response.json({error:'accounts_disabled'},{status:404,headers:{'cache-control':'no-store'}});
   if(url.pathname.startsWith('/api/auth/'))return handleAuth(new Request(url,request),url.pathname.slice('/api/auth/'.length));
   const headers=new Headers(request.headers);
   headers.delete('cf-connecting-ip');
@@ -25,5 +28,5 @@ export default {async fetch(request){
   const forwarded=new Request(url,{method:request.method,headers,body:['GET','HEAD'].includes(request.method)?undefined:request.body,duplex:'half',signal:request.signal});
   if(/^\/api\/projects\/[^/]+\/reports(?:\/|$)/.test(url.pathname))return handleReports(forwarded);
   if(url.pathname==='/api/projects'||url.pathname.startsWith('/api/projects/'))return handleProjects(forwarded);
-  return worker.fetch(forwarded,{handleScan,SCAN_ALLOWED_HOSTS:process.env.SCAN_ALLOWED_HOSTS});
+  return worker.fetch(forwarded,{handleScan,SCAN_ALLOWED_HOSTS:process.env.SCAN_ALLOWED_HOSTS,ROGI_ACCOUNTS:process.env.ROGI_ACCOUNTS});
 }};
