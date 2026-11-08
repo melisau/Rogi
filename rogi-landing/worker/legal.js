@@ -118,6 +118,33 @@ const pages={
  }
 };
 
+
+// Shorter notice used while ROGI_ACCOUNTS=off: no accounts, so no names, emails or cloud data.
+const privacyLite={
+ tr:{path:'/gizlilik',title:'Aydınlatma Metni ve Gizlilik Politikası',body:`
+<p>Rogi, Melisa Uyar tarafından ücretsiz ve kişisel bir araç olarak işletilir. İletişim: ${mail}.</p>
+<h2>Kısaca</h2>
+<p>Rogi şu anda hesap açmadan kullanılır. <strong>Ad, e-posta veya şifre toplanmaz; çerez kullanılmaz.</strong> Tarama raporları yalnız kendi tarayıcınızda saklanır. Yerel proje incelemesinde dosyalarınız tarayıcıda işlenir ve sunucuya yüklenmez.</p>
+<h2>İşlenen sınırlı veri</h2>
+<ul>
+<li><strong>Kötüye kullanım koruması:</strong> tarama kotası için IP adresinizden türetilen tek yönlü bir değer, kısa süreliğine tutulur. Ham IP adresi ve taranan adres bu amaçla saklanmaz. Hukuki sebep: meşru menfaat (KVKK m.5/2-f).</li>
+<li><strong>Sunucu kayıtları:</strong> barındırma sağlayıcısı Vercel Inc. istek kayıtlarını (IP, zaman, adres) kısa süre tutar. Sunucular ABD'dedir (KVKK m.9).</li>
+</ul>
+<h2>Haklarınız (KVKK m.11)</h2>
+<p>Bilgi isteme, düzeltme, silme ve itiraz dahil haklarınız için ${mail} adresine yazabilirsiniz. Kişisel Verileri Koruma Kurulu'na şikâyet hakkınız saklıdır.</p>`},
+ en:{path:'/privacy',title:'Privacy Notice',body:`
+<p>Rogi is operated by Melisa Uyar as a free, personal tool. Contact: ${mail}.</p>
+<h2>In short</h2>
+<p>Rogi currently works without accounts. <strong>No names, emails or passwords are collected and no cookies are used.</strong> Scan reports stay in your own browser. Local project reviews run in your browser; your files are not uploaded.</p>
+<h2>The limited data we process</h2>
+<ul>
+<li><strong>Abuse protection:</strong> a one-way value derived from your IP address is kept briefly for the scan quota. The raw IP and the scanned URL are not stored for this purpose. Legal basis: legitimate interest.</li>
+<li><strong>Server logs:</strong> our host, Vercel Inc., keeps request logs (IP, time, path) for a short time on servers in the United States.</li>
+</ul>
+<h2>Your rights</h2>
+<p>To request information, correction, deletion or to object, email ${mail}. You may also complain to the Turkish Personal Data Protection Authority or your local authority.</p>`}
+};
+
 const style=`:root{color-scheme:dark;--bg:#111318;--lime:#c5f467;--text:#f5f7fa;--muted:#b5c0d0;--line:#303743}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 Inter,Arial,sans-serif}a{color:var(--lime)}main{max-width:760px;margin:0 auto;padding:32px 16px 64px}header,footer{max-width:760px;margin:0 auto;padding:20px 16px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}header a.brand{font-weight:800;font-size:22px;color:var(--text);text-decoration:none}nav a,footer a{color:var(--muted);margin-left:14px;font-size:14px}footer{border-top:1px solid var(--line);color:var(--muted);font-size:14px}h1{font-size:clamp(28px,6vw,40px);line-height:1.15;margin:8px 0 4px}h2{font-size:20px;margin:32px 0 8px}.meta{color:var(--muted);font-size:14px}code{background:#1d2129;padding:1px 6px;border-radius:4px}li{margin:6px 0}.note{border:1px solid var(--line);border-radius:8px;padding:12px 14px;color:var(--muted);font-size:14px}:focus-visible{outline:3px solid #d9ff70;outline-offset:3px}`;
 const esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -133,8 +160,9 @@ function shell(lang,title,content,{alternate,origin,canonical}={}){
 }
 
 // Returns {html,status} for a legal/bot path, or null.
-export function legalPage(pathname,origin){
- for(const page of Object.values(pages))for(const lang of ['tr','en']){
+export function legalPage(pathname,origin,{accounts=true}={}){
+ const list=accounts?pages:{...pages,privacy:privacyLite};
+ for(const page of Object.values(list))for(const lang of ['tr','en']){
   const p=page[lang];if(p.path!==pathname)continue;
   // /bot is one path for both languages: pick by ?lang=en.
   const alternate=page.tr.path!==page.en.path?{tr:page.tr.path,en:page.en.path}:null;

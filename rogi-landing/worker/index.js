@@ -16,12 +16,14 @@ export default {async fetch(request,env={}){
  const htmlHeaders={...security,'content-security-policy':csp,'content-type':'text/html; charset=utf-8','cache-control':'no-cache'};
  if(url.pathname==='/')return new Response(null,{status:308,headers:{...security,location:'/tr'}});
  if(['/tr','/en'].includes(url.pathname))return new Response(renderLanding(url.origin,url.pathname.slice(1)),{headers:htmlHeaders});
+ const accountsOff=env.ROGI_ACCOUNTS==='off';
+ if(accountsOff&&['/projects','/account'].includes(url.pathname))return new Response(null,{status:307,headers:{...security,location:'/app'}});
  if(url.pathname==='/projects')return new Response(projectsPage,{headers:{...htmlHeaders,'cache-control':'no-store'}});
  if(url.pathname==='/account')return new Response(account,{headers:{...htmlHeaders,'cache-control':'no-store'}});
- if(url.pathname==='/app'||url.pathname==='/app/')return new Response(page,{headers:htmlHeaders});
+ if(url.pathname==='/app'||url.pathname==='/app/')return new Response(accountsOff?page.replace('<a href="/projects" class="account-link">Bulut projeleri</a>',''):page,{headers:htmlHeaders});
  if(url.pathname==='/favicon.svg'||url.pathname==='/favicon.ico')return new Response(favicon,{headers:{...security,'content-type':'image/svg+xml','cache-control':'public, max-age=86400'}});
  if(url.pathname==='/og.png')return new Response(ogImage,{headers:{...security,'content-type':'image/png','cache-control':'public, max-age=86400'}});
- const legal=legalPage(url.pathname,url.origin);
+ const legal=legalPage(url.pathname,url.origin,{accounts:!accountsOff});
  if(legal)return new Response(legal.html,{status:legal.status,headers:htmlHeaders});
  if(url.pathname==='/robots.txt')return new Response('User-agent: *\nAllow: /\nDisallow: /app\nSitemap: '+url.origin+'/sitemap.xml',{headers:{...security,'content-type':'text/plain'}});
  if(url.pathname==='/sitemap.xml')return new Response(sitemap(url.origin),{headers:{...security,'content-type':'application/xml'}});

@@ -19,3 +19,10 @@ test('favicon, share image and sitemap entries exist',async()=>{
  const landing=await (await get('/tr')).text();assert.match(landing,/og:image/);assert.match(landing,/href="\/gizlilik"/);
  assert.match(await (await get('/sitemap.xml')).text(),/\/gizlilik</);
 });
+test('ROGI_ACCOUNTS=off hides accounts and shortens the privacy notice',async()=>{
+ const off=path=>worker.fetch(new Request('https://rogi.test'+path),{ROGI_ACCOUNTS:'off'});
+ for(const path of ['/account','/projects']){const r=await off(path);assert.equal(r.status,307);assert.equal(r.headers.get('location'),'/app');}
+ assert.doesNotMatch(await (await off('/app')).text(),/href="\/projects"/);
+ const privacy=await (await off('/gizlilik')).text();assert.match(privacy,/e-posta veya şifre toplanmaz/);assert.doesNotMatch(privacy,/Hesap açarsanız/);
+ assert.match(await (await get('/gizlilik')).text(),/Hesap açarsanız/);
+});
