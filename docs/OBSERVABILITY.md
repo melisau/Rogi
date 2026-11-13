@@ -13,3 +13,6 @@ Vercel proje Logs ekranında `rogi.audit` arayın; süre ve sonuç koduyla yava�
 Özel metrik kaydı yalnız yukarıdaki beş alanı içerir. Site URL'si, IP, sorgu parametresi, notlar, rapor kanıtı, ham exception ve anahtarlar eklenmez. Hosting sağlayıcısının kendi erişim logları ayrı davranabilir. Ölçüm yazıcısındaki hata taramayı başarısız hale getirmez.
 
 Doğrulama: metrics.test.mjs başarılı/limit sonuçlarını, alan izin listesini ve bozuk log sink toleransını; cancellation.test.mjs iptal kodunu ve kapasite serbest kalmasını sınar.
+
+## Uptime
+Sentry (org `melisa-uyar-6v`, proje `rogi`) `https://rogi.melisauyar.com/api/health` adresini 5 dakikada bir kontrol eder. Art arda 2 başarısız kontrolde sorun açılır ve e-posta gelir; ilk başarılı kontrolde kapanır. Monitör: https://melisa-uyar-6v.sentry.io/monitors/2665155/
