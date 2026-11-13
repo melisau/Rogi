@@ -44,7 +44,7 @@ Reports and checklist notes are stored only in this browser (last 10 reports). J
 
 ## Personal demo
 
-https://rogi-audit.vercel.app — Vercel Authentication is enabled. The owner must sign in with the Vercel account. This is a non-commercial Hobby deployment; no paid services were enabled. Vercel uses the Node transport with socket-level DNS validation; the Worker-only transport still needs equivalent egress hardening.
+https://rogi.melisauyar.com — public; `rogi-audit.vercel.app` redirects here (308). Production runs with `ROGI_RENDER=off` and `ROGI_ACCOUNTS=off`. This is a non-commercial Hobby deployment; no paid services were enabled. Vercel uses the Node transport with socket-level DNS validation; the Worker-only transport still needs equivalent egress hardening.
 
 ## Local framework review
 

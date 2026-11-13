@@ -9,6 +9,17 @@
   },
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "rogi-audit.vercel.app"
+        }
+      ],
+      "destination": "https://rogi.melisauyar.com/:path*",
+      "permanent": true
+    },
+    {
       "source": "/",
       "destination": "/tr",
       "permanent": true
