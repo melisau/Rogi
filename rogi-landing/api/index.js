@@ -11,8 +11,11 @@ import { createScanHandler } from '../worker/audit.js';
 import { nodeScan } from '../server/transport.js';
 const handleScan=createScanHandler({runScan:nodeScan,acquireLease:acquireScanLease,onMetric:metric=>console.info(JSON.stringify(metric))});
 const handleReports=createReportsHandler({auth:handleAuth,scan:request=>handleScan(request,{SCAN_ALLOWED_HOSTS:process.env.SCAN_ALLOWED_HOSTS})});
+import renderEntry from './render.js';
 export default {async fetch(request){
   const url=new URL(request.url);
+  // The render deployment serves only /api/render; nothing else of the site.
+  if(process.env.ROGI_ROLE==='render'){const path='/'+(url.searchParams.get('rogi_route')??url.pathname.slice(1));return path==='/api/render'?renderEntry.fetch(request):new Response('Not found',{status:404});}
   const route=url.searchParams.get('rogi_route');
   if(url.pathname==='/api/index'&&route!==null)url.pathname='/'+route;
   url.searchParams.delete('rogi_route');

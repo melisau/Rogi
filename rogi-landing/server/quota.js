@@ -13,3 +13,13 @@ export async function acquireScanLease({client}){
   return {allowed:admission.allowed,retryAfter:admission.retry_after,reason:admission.reason,release:async()=>{if(admission.allowed)await sql.query('DELETE FROM rogi_private.scan_leases WHERE id=$1 AND scope=$2',[id,'audit'],{fetchOptions:{signal:AbortSignal.timeout(5000)}});}};
  }catch{throw new AuditError('Tarama servisi geçici olarak kullanılamıyor.',503,'quota_unavailable');}
 }
+
+// One slot of the shared daily render budget. Fails closed: no database answer means no render.
+export async function claimRender(limit){
+ if(!process.env.DATABASE_URL)return process.env.VERCEL!=='1';
+ try{
+  sql||=neon(process.env.DATABASE_URL);
+  const rows=await sql.query('SELECT rogi_private.claim_render($1) AS ok',[limit],{fetchOptions:{signal:AbortSignal.timeout(5000)}});
+  return rows[0]?.ok===true;
+ }catch{return false;}
+}

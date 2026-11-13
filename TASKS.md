@@ -2,7 +2,7 @@
 
 Son güncelleme: 20 Ekim 2026. [x] kanıtla doğrulanan iş, [ ] kalan iş.
 Son iş: claude/rogi-render-hardening dalı (render sertleştirme, güvenlik/mobil kontroller, silme ve hesap kurtarma).
-Kişisel/ticari olmayan Hobby yayını: https://rogi.melisauyar.com (herkese açık; rogi-audit.vercel.app buraya 308 ile yönlenir). Canlıda `ROGI_RENDER=off` ve `ROGI_ACCOUNTS=off`. Hesaplar yeniden açılmadan önce Neon Auth → Domains'e yeni alan adı eklenmeli ve better-auth uyarıları kapatılmalı.
+Kişisel/ticari olmayan Hobby yayını: https://rogi.melisauyar.com (herkese açık; rogi-audit.vercel.app buraya 308 ile yönlenir). Canlıda `ROGI_ACCOUNTS=off`; render ayrı sırsız projede (`ROGI_RENDER=remote`, bkz. rogi-landing/SECURITY.md). Hesaplar yeniden açılmadan önce Neon Auth → Domains'e yeni alan adı eklenmeli ve better-auth uyarıları kapatılmalı.
 Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun özetidir.
 
 ## P0 — Yayın ve güvenlik
