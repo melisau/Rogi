@@ -63,7 +63,7 @@ Eski adım kayıtları: docs/IMPLEMENTATION-LOG.md. Bu dosya güncel durumun öz
 - [ ] Kapsamlı erişilebilirlik ve gerçek ekran okuyucu doğrulaması. Skip link, odak, seçili durum ve temel klavye akışları geçti.
 - [x] Masaüstü ve 390px mobil rapor/proje ekranı QA; son mobil dil düğmesi sıkışması düzeltildi.
 - [x] /tr, /en SSR; canonical, hreflang, sosyal metaveri, WebSite JSON-LD ve sitemap.
-- [x] Eski seo-kontrol giriş noktası ortak motora bağlı; iki build doğrulandı.
+- [x] Eski seo-kontrol giriş noktası ve Cloudflare Worker paketi kaldırıldı (yayında kullanılmıyordu).
 - [ ] Yerel Git eşitleme: asıl Windows klasörüne yazma hâlâ başarısız. İzole çalışma kopyası test edilip GitHub'a kaydediliyor.
 
 ## Kanıt ve sınırlar
