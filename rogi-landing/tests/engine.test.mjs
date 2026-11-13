@@ -53,7 +53,7 @@ test('optional linked-page crawl stays on origin, caps at three and reports page
  const calls=[],home='<title>Home</title><h1>Home</h1>'+['/a','/b','/c','/d','/a','https://other.com/x','/logout','/search?q=x'].map(href=>'<a href="'+href+'">page</a>').join('');
  const r=await scan('https://example.com/',{checkPages:true,resolveHost:async()=>{},fetchImpl:async url=>{calls.push(url);if(url.endsWith('/robots.txt'))return new Response('User-agent: *');if(url.endsWith('/sitemap.xml'))return new Response('<urlset></urlset>');return new Response(url==='https://example.com/'?home:'<title>Linked</title><h1>Linked</h1>',{headers:{'content-type':'text/html'}});}});
  assert.equal(r.pageAudit.limit,3);assert.equal(r.pageAudit.discovered,4);assert.equal(r.pageAudit.omitted,1);assert.deepEqual(r.pageAudit.results.map(x=>x.url),['https://example.com/a','https://example.com/b','https://example.com/c']);
- assert.ok(r.pageAudit.results[0].checks.some(x=>x.id==='description'));assert.equal(calls.filter(x=>x.endsWith('/d')).length,0);assert.equal(calls.filter(x=>x.includes('other.com')).length,0);
+ assert.ok(r.pageAudit.results[0].checks.some(x=>x.id==='description'));assert.equal(calls.filter(x=>x.endsWith('/d')).length,0);assert.equal(calls.filter(x=>new URL(x).hostname==='other.com').length,0);
  assert.equal(r.score,r.passed+r.failed?Math.round(r.passed/(r.passed+r.failed)*100):null);
 });
 test('linked-page redirects to another host remain unverified',async()=>{

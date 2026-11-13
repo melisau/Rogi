@@ -1,5 +1,7 @@
 name: Rogi checks
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   test-build:
     runs-on: ubuntu-latest
