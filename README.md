@@ -44,7 +44,7 @@ Reports and checklist notes are stored only in this browser (last 10 reports). J
 
 ## Personal demo
 
-https://rogi.melisauyar.com — public; `rogi-audit.vercel.app` redirects here (308). Production runs with `ROGI_RENDER=off` and `ROGI_ACCOUNTS=off`. This is a non-commercial Hobby deployment; no paid services were enabled. Vercel uses the Node transport with socket-level DNS validation; the Worker-only transport still needs equivalent egress hardening.
+https://rogi.melisauyar.com — public; `rogi-audit.vercel.app` redirects here (308). Production runs with `ROGI_ACCOUNTS=off`; JavaScript rendering runs in a separate secret-free Vercel project (`ROGI_RENDER=remote`, see rogi-landing/SECURITY.md). This is a non-commercial Hobby deployment; no paid services were enabled. Vercel uses the Node transport with socket-level DNS validation; the Worker-only transport still needs equivalent egress hardening.
 
 ## Local framework review
 

@@ -21,9 +21,22 @@ const dispatcher=new Agent({connections:3,connect:{lookup:checkedLookup(),timeou
 export const secureFetch=(url,init)=>nodeFetch(url,{...init,dispatcher});
 // ROGI_RENDER=off disables headless rendering; client-rendered pages are then reported as unverified.
 export const renderEnabled=(env=process.env)=>env.ROGI_RENDER!=='off';
-export async function nodeScan(url,options={},{env=process.env,loadRenderer=()=>import('./render.js')}={}) {
+// ROGI_RENDER=remote sends pages to the separate render deployment (ROGI_RENDER_URL, ROGI_RENDER_TOKEN)
+// and never starts Chromium here. Each render takes one slot of the daily budget (ROGI_RENDER_DAILY_LIMIT).
+export function chooseRenderer(env,{loadRenderer=()=>import('./render.js'),loadRemote=()=>import('./render-service.js'),claim}={}){
+  if(!renderEnabled(env))return undefined;
+  if(env.ROGI_RENDER==='remote'){
+    if(!env.ROGI_RENDER_URL||!env.ROGI_RENDER_TOKEN)return undefined;
+    const limit=Number(env.ROGI_RENDER_DAILY_LIMIT)||30;
+    return ()=>loadRemote().then(m=>m.remoteRenderer({url:env.ROGI_RENDER_URL,token:env.ROGI_RENDER_TOKEN,claim:()=>(claim||defaultClaim)(limit)}));
+  }
+  return ()=>loadRenderer().then(m=>m.createRenderer());
+}
+const defaultClaim=limit=>import('./quota.js').then(m=>m.claimRender(limit));
+export async function nodeScan(url,options={},{env=process.env,loadRenderer,loadRemote,claim}={}) {
   let renderer;
-  const renderPage=renderEnabled(env)?async(home,settings)=>(await (renderer??=loadRenderer().then(m=>m.createRenderer()))).render(home,settings):undefined;
+  const make=chooseRenderer(env,{loadRenderer,loadRemote,claim});
+  const renderPage=make?async(home,settings)=>(await (renderer??=make())).render(home,settings):undefined;
   try {
     return await scan(url,{...options,fetchImpl:secureFetch,resolveHost:publicAddresses,renderPage});
   } finally {

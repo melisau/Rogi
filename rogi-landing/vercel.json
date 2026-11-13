@@ -5,6 +5,9 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 45
+    },
+    "api/render.js": {
+      "maxDuration": 45
     }
   },
   "redirects": [

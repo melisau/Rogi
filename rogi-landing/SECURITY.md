@@ -26,9 +26,11 @@ Ağ sınırları:
   - Not: önceki `MAP * 0.0.0.0` kuralı Linux'ta yerel makineye bağlanır. Gerçek Chromium ile yapılan denemede eski bayraklarla 6 kaçış denemesinin 6'sı yerel bir test sunucusuna ulaştı; yeni bayraklarla hiçbiri ulaşmadı.
 - Tarama başına tek tarayıcı açılır, sayfalar sırayla render edilir, tarama iptal edildiğinde veya 30 saniye dolduğunda aktif sayfa hemen kapatılır.
 
-Açık risk — sandbox ve sırlar:
-- @sparticuz/chromium sunucusuz ortamda `--no-sandbox` ile çalışır. Taranan sitenin JavaScript'i, DATABASE_URL, NEON_AUTH_COOKIE_SECRET ve kota HMAC anahtarının bulunduğu aynı Vercel fonksiyonunda çalışır. Chromium renderer açığı bu sırların ele geçirilmesine yol açabilir.
-- Şu anki yayın Vercel Authentication arkasında kişisel denemedir; bu risk kabul edilebilir düzeydedir.
-- Herkese açık yayından önce render, sır içermeyen ayrı bir servise/projeye taşınmalı veya `ROGI_RENDER=off` ile kapatılmalıdır. Kapalıyken JavaScript ile oluşan sayfalar puanlanmaz ve "doğrulanamadı" olarak raporlanır.
+Render ayrımı — sandbox ve sırlar:
+- @sparticuz/chromium sunucusuz ortamda `--no-sandbox` ile çalışır. Bu yüzden Chromium ana sitede çalışmaz.
+- Canlıda ana site `ROGI_RENDER=remote` ile çalışır: JavaScript gerektiren sayfa, ayrı bir Vercel projesine (`ROGI_ROLE=render`) gönderilir. O projede veritabanı adresi, oturum anahtarı veya kota anahtarı yoktur; yalnız `ROGI_RENDER_TOKEN` vardır. Bir Chromium kaçışı yalnız bu jetona ulaşır, jeton da yalnız render yaptırmaya yarar.
+- Render projesi `/api/render` dışında hiçbir şey sunmaz; jetonu zamanlama-güvenli karşılaştırır, hedef adresi `safeUrl` ile doğrular. Chromium'un istekleri orada da aynı DNS doğrulamalı taşıma katmanından geçer.
+- Hobby CPU sınırı için ana site her render'dan önce Neon'da günlük bütçeden bir hak alır (`ROGI_RENDER_DAILY_LIMIT`, varsayılan 30). Veritabanı yanıt vermezse render yapılmaz.
+- `ROGI_RENDER=off` render'ı tamamen kapatır; ayar yoksa (yerel geliştirme) Chromium yerelde çalışır.
 
-İlk yayın Vercel Authentication arkasındaki kişisel denemedir. Ticari üretim erişimi tamamlanmamıştır.
+Kurulum (render projesi): aynı depo, Root Directory `rogi-landing`, ortam değişkenleri yalnız `ROGI_ROLE=render` ve `ROGI_RENDER_TOKEN`. Ana projede: `ROGI_RENDER=remote`, `ROGI_RENDER_URL=https://<render-projesi>.vercel.app/api/render`, aynı `ROGI_RENDER_TOKEN`.

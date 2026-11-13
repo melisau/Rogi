@@ -189,7 +189,7 @@ export async function scan(input, options={}) {
       else {analysis=next;renderStatus='success';}
     } catch(error) {
       if(signal.aborted)throw error;
-      renderDetail='Tarayıcıda JavaScript içeriği doğrulanamadı; ilk HTML yanıtı gösteriliyor.';
+      renderDetail=error?.code==='render_budget'?'Bugünkü tarayıcı sınırı doldu; JavaScript içeriği yarın yeniden doğrulanabilir.':'Tarayıcıda JavaScript içeriği doğrulanamadı; ilk HTML yanıtı gösteriliyor.';
     }
   }
   const extras=await Promise.allSettled([fetchPage(origin+'/robots.txt',settings),fetchPage(origin+'/sitemap.xml',settings)]);

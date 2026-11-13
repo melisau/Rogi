@@ -2,6 +2,7 @@ export const uiEnglish={
 "JavaScript ile oluşan içerik doğrulanamadığı için puan verilmedi.":"No score was given because JavaScript-rendered content could not be verified.",
 "JavaScript çalıştırıldı; puan oluşan sayfa içeriğine dayanır.":"JavaScript ran; the score is based on the rendered page.",
 "Puan ilk HTML yanıtına dayanır.":"The score is based on the initial HTML response.",
+"Bugünkü tarayıcı sınırı doldu; JavaScript içeriği yarın yeniden doğrulanabilir.":"Today's browser limit has been reached; JavaScript content can be verified again tomorrow.",
 "Tarayıcı açıldı ancak H1 veya iç bağlantılar oluşmadı; sonuç doğrulanamadı.":"The browser opened the page, but no H1 or internal links appeared; the result could not be verified.",
 "Tarayıcıda JavaScript içeriği doğrulanamadı; ilk HTML yanıtı gösteriliyor.":"JavaScript content could not be verified in the browser; showing the initial HTML response.",
 "Bu ortamda tarayıcı ile JavaScript içeriği oluşturulamıyor; ilk HTML yanıtı gösteriliyor.":"JavaScript content cannot be rendered in this environment; showing the initial HTML response.",
