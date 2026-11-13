@@ -48,7 +48,7 @@ export async function fetchPage(input, {fetchImpl=fetch, resolveHost=host=>resol
     if(allowedHosts && !allowedHosts.includes(current.hostname)) throw new AuditError('Bu alan adı tarama izin listesinde değil.',403,'host_not_allowed');
     await resolveHost(current.hostname);
     signal?.throwIfAborted();
-    const response=await fetchImpl(current.href,{method,redirect:'manual',headers:{'user-agent':'RogiAudit/1.0 (+https://rogi-audit.vercel.app/bot)',accept:'text/html,text/plain,application/xml;q=0.8'},signal:signal||AbortSignal.timeout(10000)});
+    const response=await fetchImpl(current.href,{method,redirect:'manual',headers:{'user-agent':'RogiAudit/1.0 (+https://rogi.melisauyar.com/bot)',accept:'text/html,text/plain,application/xml;q=0.8'},signal:signal||AbortSignal.timeout(10000)});
     if([301,302,303,307,308].includes(response.status)) {
       const location=response.headers.get('location'); await response.body?.cancel();
       if(!location) throw new AuditError('Yönlendirme hedefi bulunamadı.',502,'invalid_redirect');
